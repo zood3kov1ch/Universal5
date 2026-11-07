@@ -1,0 +1,2999 @@
+--// FEMBOY SOFT MOD MENU (Fully Customization Glass Edition)
+--// For your own Roblox Studio experience  (extended edition: 8 pages, 150+ controls)
+--// Place in StarterPlayer > StarterPlayerScripts
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local Camera = workspace.CurrentCamera
+local Lighting = game:GetService("Lighting")
+local StarterGui = game:GetService("StarterGui")
+local TeleportService = game:GetService("TeleportService")
+local VirtualUser = game:GetService("VirtualUser")
+local StatsService = game:GetService("Stats")
+
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+
+-- Всі підключення зберігаються тут, щоб кнопка "Unload Menu" могла все відключити
+local Connections = {}
+local Unloaded = false
+
+local function connect(signal, callback)
+	local c = signal:Connect(callback)
+	table.insert(Connections, c)
+	return c
+end
+
+--==================================================
+-- SETTINGS & THEMES
+--==================================================
+
+local Settings = {
+	Fly = false,
+	Noclip = false,
+	ESP = false,
+	AimAssist = false,
+	InfiniteStamina = false,
+
+	WalkSpeed = 16,
+	JumpPower = 50,
+	FOV = 70,
+
+	FlySpeed = 60,
+	AimFOV = 120,
+
+	MenuKey = Enum.KeyCode.RightShift,
+	CurrentTheme = "Dark", -- "Dark" або "Light"
+	AccentName = "Pink",   -- Поточний акцентний колір
+	CustomAlpha = 0.35,    -- Рівень прозорості скла
+
+	--// ===== NEW: MOVEMENT =====
+	InfJump = false, BunnyHop = false, Sprint = false, SprintMult = 2,
+	Dash = false, DashPower = 80, ClickTP = false, SpinBot = false, SpinSpeed = 20,
+	SafeFall = false, FastFall = false, AirWalk = false, AutoWalk = false,
+	AntiVoid = false, PlatformStand = false, Freeze = false, Ragdoll = false, FlySmooth = 0,
+
+	--// ===== NEW: VISUAL =====
+	NameESP = false, ShowDistance = true, ShowHealth = true, BoxESP = false, Tracers = false,
+	ESPTeamCheck = false, ESPColorMode = "Accent", ESPDistance = 2000, ESPFill = 65, ESPOutline = 0,
+	Crosshair = false, CrosshairSize = 10, CrosshairGap = 4, CrosshairColor = "Accent", FOVCircle = false,
+	HudWatermark = false, HudFPS = false, HudPing = false, HudMemory = false,
+	HudCoords = false, HudSpeed = false, HudClock = false,
+	Zoom = false, ZoomFOV = 25, Freecam = false, FreecamSpeed = 60,
+	HideSelf = false, SelfHighlight = false, XRay = false,
+
+	--// ===== NEW: WORLD =====
+	Fullbright = false, DayCycle = false, CycleSpeed = 10, RainbowAmbient = false,
+
+	--// ===== NEW: COMBAT =====
+	AimSmooth = 100, AimPart = "Head", AimKey = "Right Mouse", AimTeamCheck = false,
+	AimWallCheck = false, AimPrediction = 0, AimDistance = 1000,
+	GodMode = false, AutoHeal = false, HealRate = 10, AutoTool = false, ToolDelay = 150,
+	AutoEquip = false, LocalFF = false,
+
+	--// ===== NEW: PLAYER / TELEPORT =====
+	AnimSpeed = 100, FollowDistance = 5, SpawnAtDeath = false,
+	SmoothTP = false, TweenTime = 0.5, TPDistance = 25,
+
+	--// ===== NEW: UTILITY / SETTINGS =====
+	Notifications = true, AntiAFK = false, Hotkeys = true, MenuAnim = true,
+	UIScale = 100, RainbowAccent = false, Rebinding = false,
+
+	Keys = {
+		Fly = Enum.KeyCode.F,
+		Noclip = Enum.KeyCode.N,
+		ESP = Enum.KeyCode.K,
+		Aim = Enum.KeyCode.X,
+		InfJump = Enum.KeyCode.J,
+		Freecam = Enum.KeyCode.P,
+		Fullbright = Enum.KeyCode.H,
+		Dash = Enum.KeyCode.Q,
+		Zoom = Enum.KeyCode.Z,
+		FastFall = Enum.KeyCode.V,
+		Panic = Enum.KeyCode.End,
+	},
+}
+
+-- Доступні акцентні кольори
+local Accents = {
+	Pink = Color3.fromRGB(255, 130, 180),
+	Cyan = Color3.fromRGB(100, 210, 255),
+	Purple = Color3.fromRGB(190, 130, 255),
+	Mint = Color3.fromRGB(100, 220, 150),
+	Gold = Color3.fromRGB(255, 200, 100),
+}
+
+-- Базові налаштування тем
+local Themes = {
+	Dark = {
+		MainBg = Color3.fromRGB(20, 20, 28),
+		SidebarBg = Color3.fromRGB(15, 15, 22),
+		ElementBg = Color3.fromRGB(255, 255, 255),
+		ElementBgTransparency = 0.88,
+		StrokeColor = Color3.fromRGB(255, 255, 255),
+		StrokeTransparency = 0.75,
+		TextPrimary = Color3.fromRGB(255, 255, 255),
+		TextSecondary = Color3.fromRGB(180, 180, 200),
+	},
+	Light = {
+		MainBg = Color3.fromRGB(245, 245, 250),
+		SidebarBg = Color3.fromRGB(230, 230, 240),
+		ElementBg = Color3.fromRGB(255, 255, 255),
+		ElementBgTransparency = 0.35,
+		StrokeColor = Color3.fromRGB(255, 255, 255),
+		StrokeTransparency = 0.3,
+		TextPrimary = Color3.fromRGB(30, 30, 40),
+		TextSecondary = Color3.fromRGB(90, 90, 110),
+	}
+}
+
+-- Реєстр для динамічного оновлення елементів
+local ThemeRegistry = {
+	MainFrame = {},
+	SidebarFrame = {},
+	Elements = {},
+	Strokes = {},
+	TextPrimary = {},
+	TextSecondary = {},
+	Accents = {},
+}
+
+--==================================================
+-- CHARACTER
+--==================================================
+
+local Character, Humanoid, Root
+
+local function updateCharacter()
+	Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+	Humanoid = Character:WaitForChild("Humanoid")
+	Root = Character:WaitForChild("HumanoidRootPart")
+
+	Humanoid.WalkSpeed = Settings.WalkSpeed
+	Humanoid.JumpPower = Settings.JumpPower
+end
+
+updateCharacter()
+
+connect(LocalPlayer.CharacterAdded, function()
+	task.wait(0.5)
+	updateCharacter()
+end)
+
+--==================================================
+-- GUI BASE
+--==================================================
+
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "FemboySoftMenu"
+Gui.ResetOnSpawn = false
+Gui.DisplayOrder = 10
+Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+Gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local Main = Instance.new("Frame")
+Main.Name = "Main"
+Main.Size = UDim2.fromOffset(680, 480)
+Main.Position = UDim2.fromScale(0.5, 0.5)
+Main.AnchorPoint = Vector2.new(0.5, 0.5)
+Main.BorderSizePixel = 0
+Main.Parent = Gui
+table.insert(ThemeRegistry.MainFrame, Main)
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 16)
+MainCorner.Parent = Main
+
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Thickness = 1.5
+MainStroke.Parent = Main
+table.insert(ThemeRegistry.Strokes, MainStroke)
+
+--==================================================
+-- TITLE
+--==================================================
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -30, 0, 45)
+Title.Position = UDim2.fromOffset(20, 10)
+Title.BackgroundTransparency = 1
+Title.Text = "FEMBOY SOFT"
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 24
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Main
+table.insert(ThemeRegistry.TextPrimary, Title)
+
+local Subtitle = Instance.new("TextLabel")
+Subtitle.Size = UDim2.new(1, -30, 0, 20)
+Subtitle.Position = UDim2.fromOffset(21, 42)
+Subtitle.BackgroundTransparency = 1
+Subtitle.Text = "CUSTOMIZABLE GLASS EDITION"
+Subtitle.Font = Enum.Font.Gotham
+Subtitle.TextSize = 10
+Subtitle.TextXAlignment = Enum.TextXAlignment.Left
+Subtitle.Parent = Main
+table.insert(ThemeRegistry.TextSecondary, Subtitle)
+
+--==================================================
+-- SIDEBAR & CONTENT
+--==================================================
+
+local Sidebar = Instance.new("Frame")
+Sidebar.Size = UDim2.fromOffset(150, 390)
+Sidebar.Position = UDim2.fromOffset(15, 75)
+Sidebar.BorderSizePixel = 0
+Sidebar.Parent = Main
+table.insert(ThemeRegistry.SidebarFrame, Sidebar)
+
+local SidebarCorner = Instance.new("UICorner")
+SidebarCorner.CornerRadius = UDim.new(0, 12)
+SidebarCorner.Parent = Sidebar
+
+local SidebarStroke = Instance.new("UIStroke")
+SidebarStroke.Thickness = 1
+SidebarStroke.Parent = Sidebar
+table.insert(ThemeRegistry.Strokes, SidebarStroke)
+
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1, -195, 1, -90)
+Content.Position = UDim2.fromOffset(180, 75)
+Content.BackgroundTransparency = 1
+Content.Parent = Main
+
+local Pages = {}
+
+local function createPage(name)
+	local Page = Instance.new("ScrollingFrame")
+	Page.Name = name
+	Page.Size = UDim2.fromScale(1, 1)
+	Page.BackgroundTransparency = 1
+	Page.BorderSizePixel = 0
+	Page.ScrollBarThickness = 3
+	Page.CanvasSize = UDim2.new(0, 0, 0, 0)
+	Page.Visible = false
+	Page.Parent = Content
+
+	local Layout = Instance.new("UIListLayout")
+	Layout.Padding = UDim.new(0, 8)
+	Layout.Parent = Page
+
+	Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		Page.CanvasSize = UDim2.fromOffset(0, Layout.AbsoluteContentSize.Y + 10)
+	end)
+
+	Pages[name] = Page
+	return Page
+end
+
+local MovementPage = createPage("Movement")
+local VisualPage = createPage("Visual")
+local CombatPage = createPage("Combat")
+local PlayerPage = createPage("Player")
+local WorldPage = createPage("World")
+local TeleportPage = createPage("Teleport")
+local UtilityPage = createPage("Utility")
+local SettingsPage = createPage("Settings")
+
+local function showPage(name)
+	for pageName, page in pairs(Pages) do
+		page.Visible = pageName == name
+	end
+end
+
+showPage("Movement")
+
+--==================================================
+-- THEME & CUSTOMIZATION ENGINE
+--==================================================
+
+local function applyTheme()
+	local theme = Themes[Settings.CurrentTheme]
+	local accent = Accents[Settings.AccentName]
+
+	for _, frame in ipairs(ThemeRegistry.MainFrame) do
+		frame.BackgroundColor3 = theme.MainBg
+		frame.BackgroundTransparency = Settings.CustomAlpha
+	end
+
+	for _, frame in ipairs(ThemeRegistry.SidebarFrame) do
+		frame.BackgroundColor3 = theme.SidebarBg
+		frame.BackgroundTransparency = Settings.CustomAlpha + 0.1
+	end
+
+	for _, elem in ipairs(ThemeRegistry.Elements) do
+		elem.BackgroundColor3 = theme.ElementBg
+		elem.BackgroundTransparency = theme.ElementBgTransparency
+	end
+
+	for _, stroke in ipairs(ThemeRegistry.Strokes) do
+		stroke.Color = theme.StrokeColor
+		stroke.Transparency = theme.StrokeTransparency
+	end
+
+	for _, text in ipairs(ThemeRegistry.TextPrimary) do
+		text.TextColor3 = theme.TextPrimary
+	end
+
+	for _, text in ipairs(ThemeRegistry.TextSecondary) do
+		text.TextColor3 = theme.TextSecondary
+	end
+
+	for _, obj in ipairs(ThemeRegistry.Accents) do
+		if obj:IsA("Frame") and obj.Name == "Indicator" then
+			obj.BackgroundColor3 = accent
+		elseif obj:IsA("Frame") and obj.Name == "Fill" then
+			obj.BackgroundColor3 = accent
+		end
+	end
+end
+
+--==================================================
+-- SIDEBAR BUTTONS
+--==================================================
+
+local function sidebarButton(text, pageName, y)
+	local Button = Instance.new("TextButton")
+	Button.Size = UDim2.new(1, -16, 0, 40)
+	Button.Position = UDim2.fromOffset(8, y)
+	Button.Text = text
+	Button.Font = Enum.Font.GothamMedium
+	Button.TextSize = 12
+	Button.AutoButtonColor = false
+	Button.Parent = Sidebar
+	table.insert(ThemeRegistry.Elements, Button)
+	table.insert(ThemeRegistry.TextPrimary, Button)
+
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0, 8)
+	Corner.Parent = Button
+
+	local Stroke = Instance.new("UIStroke")
+	Stroke.Thickness = 1
+	Stroke.Parent = Button
+	table.insert(ThemeRegistry.Strokes, Stroke)
+
+	Button.MouseButton1Click:Connect(function()
+		showPage(pageName)
+	end)
+
+	Button.MouseEnter:Connect(function()
+		TweenService:Create(Button, TweenInfo.new(0.2), { BackgroundTransparency = 0.2 }):Play()
+	end)
+
+	Button.MouseLeave:Connect(function()
+		TweenService:Create(Button, TweenInfo.new(0.2), { BackgroundTransparency = Themes[Settings.CurrentTheme].ElementBgTransparency }):Play()
+	end)
+end
+
+sidebarButton("MOVEMENT", "Movement", 10)
+sidebarButton("VISUAL", "Visual", 57)
+sidebarButton("WORLD", "World", 104)
+sidebarButton("COMBAT", "Combat", 151)
+sidebarButton("PLAYER", "Player", 198)
+sidebarButton("TELEPORT", "Teleport", 245)
+sidebarButton("UTILITY", "Utility", 292)
+sidebarButton("SETTINGS", "Settings", 339)
+
+--==================================================
+-- UI HELPERS
+--==================================================
+
+local Toggles, Sliders, SliderDefaults, SliderNoReset = {}, {}, {}, {}
+local InfoLabels = {}
+local MenuOpen = true
+
+local MenuScale = Instance.new("UIScale")
+MenuScale.Parent = Main
+
+--==================================================
+-- NOTIFICATIONS
+--==================================================
+
+local NotifyHolder = Instance.new("Frame")
+NotifyHolder.Name = "Notifications"
+NotifyHolder.BackgroundTransparency = 1
+NotifyHolder.AnchorPoint = Vector2.new(1, 1)
+NotifyHolder.Position = UDim2.new(1, -20, 1, -20)
+NotifyHolder.Size = UDim2.fromOffset(260, 400)
+NotifyHolder.Parent = Gui
+
+local NotifyLayout = Instance.new("UIListLayout")
+NotifyLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+NotifyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+NotifyLayout.Padding = UDim.new(0, 6)
+NotifyLayout.SortOrder = Enum.SortOrder.LayoutOrder
+NotifyLayout.Parent = NotifyHolder
+
+local function notify(text, duration, force)
+	if not (Settings.Notifications or force) then return end
+	local theme = Themes[Settings.CurrentTheme]
+
+	local Frame = Instance.new("Frame")
+	Frame.Size = UDim2.fromOffset(240, 34)
+	Frame.BackgroundColor3 = theme.MainBg
+	Frame.BackgroundTransparency = 0.15
+	Frame.BorderSizePixel = 0
+	Frame.Parent = NotifyHolder
+
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0, 8)
+	Corner.Parent = Frame
+
+	local Stroke = Instance.new("UIStroke")
+	Stroke.Thickness = 1.2
+	Stroke.Color = Accents[Settings.AccentName] or Accents.Pink
+	Stroke.Parent = Frame
+
+	local Label = Instance.new("TextLabel")
+	Label.Size = UDim2.new(1, -16, 1, 0)
+	Label.Position = UDim2.fromOffset(8, 0)
+	Label.BackgroundTransparency = 1
+	Label.Text = text
+	Label.Font = Enum.Font.GothamMedium
+	Label.TextSize = 12
+	Label.TextColor3 = theme.TextPrimary
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.TextTruncate = Enum.TextTruncate.AtEnd
+	Label.Parent = Frame
+
+	task.delay(duration or 2.5, function()
+		if not Frame.Parent then return end
+		local info = TweenInfo.new(0.3)
+		TweenService:Create(Frame, info, { BackgroundTransparency = 1 }):Play()
+		TweenService:Create(Stroke, info, { Transparency = 1 }):Play()
+		TweenService:Create(Label, info, { TextTransparency = 1 }):Play()
+		task.wait(0.35)
+		Frame:Destroy()
+	end)
+end
+
+--==================================================
+-- BUILDERS
+--==================================================
+
+local function decorate(inst, radius)
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0, radius or 8)
+	Corner.Parent = inst
+
+	local Stroke = Instance.new("UIStroke")
+	Stroke.Thickness = 1
+	Stroke.Parent = inst
+
+	table.insert(ThemeRegistry.Strokes, Stroke)
+	table.insert(ThemeRegistry.Elements, inst)
+end
+
+local function hover(Button)
+	Button.MouseEnter:Connect(function()
+		TweenService:Create(Button, TweenInfo.new(0.15), { BackgroundTransparency = 0.2 }):Play()
+	end)
+	Button.MouseLeave:Connect(function()
+		TweenService:Create(Button, TweenInfo.new(0.15), { BackgroundTransparency = Themes[Settings.CurrentTheme].ElementBgTransparency }):Play()
+	end)
+end
+
+local function createSection(parent, text)
+	local Label = Instance.new("TextLabel")
+	Label.Size = UDim2.new(1, -8, 0, 26)
+	Label.BackgroundTransparency = 1
+	Label.Text = text
+	Label.Font = Enum.Font.GothamBold
+	Label.TextSize = 11
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.TextYAlignment = Enum.TextYAlignment.Bottom
+	Label.Parent = parent
+	table.insert(ThemeRegistry.TextSecondary, Label)
+	return Label
+end
+
+-- callback(enabled, isInit): isInit == true при першому виклику під час створення
+local function createToggle(parent, text, default, callback)
+	local Button = Instance.new("TextButton")
+	Button.Name = text
+	Button.Size = UDim2.new(1, -8, 0, 42)
+	Button.BorderSizePixel = 0
+	Button.AutoButtonColor = false
+	Button.Text = ""
+	Button.Parent = parent
+	table.insert(ThemeRegistry.Elements, Button)
+
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0, 8)
+	Corner.Parent = Button
+
+	local Stroke = Instance.new("UIStroke")
+	Stroke.Thickness = 1
+	Stroke.Parent = Button
+	table.insert(ThemeRegistry.Strokes, Stroke)
+
+	local Label = Instance.new("TextLabel")
+	Label.Size = UDim2.new(1, -70, 1, 0)
+	Label.Position = UDim2.fromOffset(14, 0)
+	Label.BackgroundTransparency = 1
+	Label.Text = text
+	Label.Font = Enum.Font.GothamMedium
+	Label.TextSize = 13
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.Parent = Button
+	table.insert(ThemeRegistry.TextPrimary, Label)
+
+	local Indicator = Instance.new("Frame")
+	Indicator.Name = "Indicator"
+	Indicator.Size = UDim2.fromOffset(36, 18)
+	Indicator.Position = UDim2.new(1, -48, 0.5, -9)
+	Indicator.Parent = Button
+	table.insert(ThemeRegistry.Accents, Indicator)
+
+	local IC = Instance.new("UICorner")
+	IC.CornerRadius = UDim.new(1, 0)
+	IC.Parent = Indicator
+
+	local enabled = default
+
+	local function refresh(init)
+		Indicator.BackgroundTransparency = enabled and 0.1 or 0.6
+		callback(enabled, init)
+	end
+
+	Button.MouseButton1Click:Connect(function()
+		enabled = not enabled
+		refresh(false)
+		notify(text .. (enabled and "  ON" or "  OFF"))
+	end)
+
+	Toggles[text] = {
+		get = function() return enabled end,
+		set = function(value)
+			if enabled ~= value then
+				enabled = value
+				refresh(false)
+			end
+		end,
+	}
+
+	refresh(true)
+	return Button
+end
+
+-- opts: { decimals = 0, suffix = "", silent = false, noReset = false }
+local function createSlider(parent, text, min, max, default, callback, opts)
+	opts = opts or {}
+	local mult = 10 ^ (opts.decimals or 0)
+	local suffix = opts.suffix or ""
+
+	local Frame = Instance.new("Frame")
+	Frame.Size = UDim2.new(1, -8, 0, 60)
+	Frame.BorderSizePixel = 0
+	Frame.Parent = parent
+	table.insert(ThemeRegistry.Elements, Frame)
+
+	local Corner = Instance.new("UICorner")
+	Corner.CornerRadius = UDim.new(0, 8)
+	Corner.Parent = Frame
+
+	local Stroke = Instance.new("UIStroke")
+	Stroke.Thickness = 1
+	Stroke.Parent = Frame
+	table.insert(ThemeRegistry.Strokes, Stroke)
+
+	local Label = Instance.new("TextLabel")
+	Label.Size = UDim2.new(0.7, 0, 0, 25)
+	Label.Position = UDim2.fromOffset(14, 5)
+	Label.BackgroundTransparency = 1
+	Label.Text = text
+	Label.Font = Enum.Font.GothamMedium
+	Label.TextSize = 13
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.Parent = Frame
+	table.insert(ThemeRegistry.TextPrimary, Label)
+
+	local ValueLabel = Instance.new("TextLabel")
+	ValueLabel.Size = UDim2.new(0.3, -14, 0, 25)
+	ValueLabel.Position = UDim2.new(0.7, 0, 0, 5)
+	ValueLabel.BackgroundTransparency = 1
+	ValueLabel.Font = Enum.Font.Gotham
+	ValueLabel.TextSize = 12
+	ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
+	ValueLabel.Parent = Frame
+	table.insert(ThemeRegistry.TextSecondary, ValueLabel)
+
+	local Bar = Instance.new("Frame")
+	Bar.Size = UDim2.new(1, -28, 0, 4)
+	Bar.Position = UDim2.fromOffset(14, 38)
+	Bar.BackgroundColor3 = Color3.fromRGB(150, 150, 160)
+	Bar.BackgroundTransparency = 0.6
+	Bar.BorderSizePixel = 0
+	Bar.Parent = Frame
+
+	local BC = Instance.new("UICorner")
+	BC.CornerRadius = UDim.new(1, 0)
+	BC.Parent = Bar
+
+	local Fill = Instance.new("Frame")
+	Fill.Name = "Fill"
+	Fill.Size = UDim2.fromScale((default - min) / (max - min), 1)
+	Fill.BorderSizePixel = 0
+	Fill.Parent = Bar
+	table.insert(ThemeRegistry.Accents, Fill)
+
+	local FC = Instance.new("UICorner")
+	FC.CornerRadius = UDim.new(1, 0)
+	FC.Parent = Fill
+
+	local dragging = false
+
+	local function setValue(value, silent)
+		value = math.clamp(value, min, max)
+		value = math.floor(value * mult + 0.5) / mult
+		local percent = (value - min) / (max - min)
+		Fill.Size = UDim2.fromScale(percent, 1)
+		ValueLabel.Text = tostring(value) .. suffix
+		if not silent then callback(value) end
+	end
+
+	local function fromMouse(x)
+		local percent = math.clamp((x - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
+		setValue(min + (max - min) * percent)
+	end
+
+	-- Клік по нижній половині блоку теж рухає слайдер (зручніше, ніж цілитись у 4px смужку)
+	Frame.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			if input.Position.Y - Frame.AbsolutePosition.Y > 28 then
+				dragging = true
+				fromMouse(input.Position.X)
+			end
+		end
+	end)
+
+	connect(UserInputService.InputEnded, function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+	end)
+
+	connect(UserInputService.InputChanged, function(input)
+		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+			fromMouse(input.Position.X)
+		end
+	end)
+
+	Sliders[text] = function(v) setValue(v) end
+	SliderDefaults[text] = default
+	if opts.noReset then SliderNoReset[text] = true end
+
+	setValue(default, opts.silent)
+	return Frame
+end
+
+-- defs = { {"Text", function(button) ... end}, ... }
+local function createRow(parent, defs, height)
+	local Row = Instance.new("Frame")
+	Row.Size = UDim2.new(1, -8, 0, height or 36)
+	Row.BackgroundTransparency = 1
+	Row.BorderSizePixel = 0
+	Row.Parent = parent
+
+	local Layout = Instance.new("UIListLayout")
+	Layout.FillDirection = Enum.FillDirection.Horizontal
+	Layout.Padding = UDim.new(0, 6)
+	Layout.Parent = Row
+
+	local count = #defs
+	local buttons = {}
+
+	for i, def in ipairs(defs) do
+		local B = Instance.new("TextButton")
+		B.Size = UDim2.new(1 / count, -6 * (count - 1) / count, 1, 0)
+		B.BorderSizePixel = 0
+		B.AutoButtonColor = false
+		B.Text = def[1]
+		B.Font = Enum.Font.GothamMedium
+		B.TextSize = count > 2 and 11 or 12
+		B.TextTruncate = Enum.TextTruncate.AtEnd
+		B.Parent = Row
+		decorate(B)
+		table.insert(ThemeRegistry.TextPrimary, B)
+		hover(B)
+		B.MouseButton1Click:Connect(function() def[2](B) end)
+		buttons[i] = B
+	end
+
+	return Row, buttons
+end
+
+local function createButton(parent, text, callback)
+	local _, buttons = createRow(parent, { { text, callback } }, 38)
+	return buttons[1]
+end
+
+local function createCycle(parent, text, options, default, callback)
+	local index = table.find(options, default) or 1
+
+	local Button = Instance.new("TextButton")
+	Button.Size = UDim2.new(1, -8, 0, 38)
+	Button.BorderSizePixel = 0
+	Button.AutoButtonColor = false
+	Button.Font = Enum.Font.GothamMedium
+	Button.TextSize = 13
+	Button.Parent = parent
+	decorate(Button)
+	table.insert(ThemeRegistry.TextPrimary, Button)
+	hover(Button)
+
+	local function refresh()
+		Button.Text = text .. ": " .. options[index]
+	end
+
+	Button.MouseButton1Click:Connect(function()
+		index = index % #options + 1
+		refresh()
+		callback(options[index], index)
+	end)
+
+	refresh()
+	callback(options[index], index)
+	return Button
+end
+
+local function createTextBox(parent, placeholder, onSubmit)
+	local Box = Instance.new("TextBox")
+	Box.Size = UDim2.new(1, -8, 0, 38)
+	Box.BorderSizePixel = 0
+	Box.Text = ""
+	Box.PlaceholderText = placeholder
+	Box.PlaceholderColor3 = Color3.fromRGB(150, 150, 165)
+	Box.ClearTextOnFocus = false
+	Box.Font = Enum.Font.GothamMedium
+	Box.TextSize = 13
+	Box.Parent = parent
+	decorate(Box)
+	table.insert(ThemeRegistry.TextPrimary, Box)
+
+	Box.FocusLost:Connect(function(enterPressed)
+		if enterPressed and onSubmit then onSubmit(Box.Text, Box) end
+	end)
+	return Box
+end
+
+local function createKeybind(parent, text, getKey, setKey)
+	local Button = Instance.new("TextButton")
+	Button.Size = UDim2.new(1, -8, 0, 38)
+	Button.BorderSizePixel = 0
+	Button.AutoButtonColor = false
+	Button.Font = Enum.Font.GothamMedium
+	Button.TextSize = 13
+	Button.Parent = parent
+	decorate(Button)
+	table.insert(ThemeRegistry.TextPrimary, Button)
+	hover(Button)
+
+	local function refresh()
+		Button.Text = text .. ": " .. getKey().Name
+	end
+
+	Button.MouseButton1Click:Connect(function()
+		if Settings.Rebinding then return end
+		Settings.Rebinding = true
+		Button.Text = text .. ": press a key..."
+		local conn
+		conn = connect(UserInputService.InputBegan, function(input)
+			if input.UserInputType == Enum.UserInputType.Keyboard then
+				if input.KeyCode ~= Enum.KeyCode.Escape then setKey(input.KeyCode) end
+				refresh()
+				conn:Disconnect()
+				task.defer(function() Settings.Rebinding = false end)
+			end
+		end)
+	end)
+
+	refresh()
+	return Button
+end
+
+local function createInfo(parent, prefix, getter)
+	local Label = Instance.new("TextLabel")
+	Label.Size = UDim2.new(1, -8, 0, 30)
+	Label.BorderSizePixel = 0
+	Label.Font = Enum.Font.Gotham
+	Label.TextSize = 12
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.Text = prefix
+	Label.Parent = parent
+	decorate(Label)
+	table.insert(ThemeRegistry.TextSecondary, Label)
+
+	local Pad = Instance.new("UIPadding")
+	Pad.PaddingLeft = UDim.new(0, 14)
+	Pad.Parent = Label
+
+	table.insert(InfoLabels, { Label = Label, Prefix = prefix, Get = getter })
+	return Label
+end
+
+-- Контейнер для динамічних списків (гравці, вейпоінти, спавни)
+local function createList(parent)
+	local List = Instance.new("Frame")
+	List.Size = UDim2.new(1, -8, 0, 0)
+	List.AutomaticSize = Enum.AutomaticSize.Y
+	List.BackgroundTransparency = 1
+	List.BorderSizePixel = 0
+	List.Parent = parent
+
+	local Layout = Instance.new("UIListLayout")
+	Layout.Padding = UDim.new(0, 6)
+	Layout.Parent = List
+	return List
+end
+
+local function clearList(List)
+	for _, child in ipairs(List:GetChildren()) do
+		if child:IsA("GuiObject") then child:Destroy() end
+	end
+end
+
+local fpsAverage = 60
+local StartClock = os.clock()
+
+--==================================================
+-- OVERLAY (crosshair / HUD / tracers / FOV circle)
+--==================================================
+
+local Overlay = Instance.new("ScreenGui")
+Overlay.Name = "FemboySoftOverlay"
+Overlay.ResetOnSpawn = false
+Overlay.IgnoreGuiInset = true
+Overlay.DisplayOrder = -1
+Overlay.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+Overlay.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local TracerFolder = Instance.new("Folder")
+TracerFolder.Name = "Tracers"
+TracerFolder.Parent = Overlay
+
+-- Crosshair
+local CrosshairFolder = Instance.new("Frame")
+CrosshairFolder.BackgroundTransparency = 1
+CrosshairFolder.Size = UDim2.fromScale(1, 1)
+CrosshairFolder.Visible = false
+CrosshairFolder.Parent = Overlay
+
+local CrosshairParts = {}
+for i = 1, 5 do
+	local f = Instance.new("Frame")
+	f.BorderSizePixel = 0
+	f.AnchorPoint = Vector2.new(0.5, 0.5)
+	f.Parent = CrosshairFolder
+	CrosshairParts[i] = f
+end
+
+local CrosshairColors = {
+	White = Color3.fromRGB(255, 255, 255),
+	Red = Color3.fromRGB(255, 70, 70),
+	Green = Color3.fromRGB(80, 255, 120),
+	Cyan = Color3.fromRGB(80, 220, 255),
+	Yellow = Color3.fromRGB(255, 235, 80),
+}
+
+local function updateCrosshair()
+	CrosshairFolder.Visible = Settings.Crosshair
+	if not Settings.Crosshair then return end
+	local len, gap = Settings.CrosshairSize, Settings.CrosshairGap
+	local color = CrosshairColors[Settings.CrosshairColor] or Accents[Settings.AccentName] or Accents.Pink
+	local off = gap + len / 2
+	local top, bottom, left, right, dot = CrosshairParts[1], CrosshairParts[2], CrosshairParts[3], CrosshairParts[4], CrosshairParts[5]
+
+	top.Size = UDim2.fromOffset(2, len)
+	top.Position = UDim2.new(0.5, 0, 0.5, -off)
+	bottom.Size = UDim2.fromOffset(2, len)
+	bottom.Position = UDim2.new(0.5, 0, 0.5, off)
+	left.Size = UDim2.fromOffset(len, 2)
+	left.Position = UDim2.new(0.5, -off, 0.5, 0)
+	right.Size = UDim2.fromOffset(len, 2)
+	right.Position = UDim2.new(0.5, off, 0.5, 0)
+	dot.Size = UDim2.fromOffset(3, 3)
+	dot.Position = UDim2.fromScale(0.5, 0.5)
+
+	for _, part in ipairs(CrosshairParts) do part.BackgroundColor3 = color end
+end
+
+-- FOV circle (аім)
+local FOVCircle = Instance.new("Frame")
+FOVCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+FOVCircle.BackgroundTransparency = 1
+FOVCircle.BorderSizePixel = 0
+FOVCircle.Visible = false
+FOVCircle.Parent = Overlay
+
+local FOVCorner = Instance.new("UICorner")
+FOVCorner.CornerRadius = UDim.new(1, 0)
+FOVCorner.Parent = FOVCircle
+
+local FOVStroke = Instance.new("UIStroke")
+FOVStroke.Thickness = 1.5
+FOVStroke.Parent = FOVCircle
+
+-- HUD текст
+local HudLabel = Instance.new("TextLabel")
+HudLabel.BackgroundTransparency = 1
+HudLabel.Position = UDim2.fromOffset(12, 12)
+HudLabel.Size = UDim2.fromOffset(320, 20)
+HudLabel.AutomaticSize = Enum.AutomaticSize.Y
+HudLabel.Font = Enum.Font.GothamBold
+HudLabel.TextSize = 13
+HudLabel.TextXAlignment = Enum.TextXAlignment.Left
+HudLabel.TextYAlignment = Enum.TextYAlignment.Top
+HudLabel.TextStrokeTransparency = 0.5
+HudLabel.TextColor3 = Color3.new(1, 1, 1)
+HudLabel.Text = ""
+HudLabel.Parent = Overlay
+
+--==================================================
+-- CORE STATE / HELPERS
+--==================================================
+
+local LastCFrame, DeathCFrame, PendingRespawn
+local SavedSlots, Waypoints = {}, {}
+local SpectateTarget, FollowTarget
+local rebuildWaypoints, rebuildSpawns, rebuildPlayers, unload -- призначаються пізніше
+
+local OrigLighting = {
+	Brightness = Lighting.Brightness,
+	ClockTime = Lighting.ClockTime,
+	FogStart = Lighting.FogStart,
+	FogEnd = Lighting.FogEnd,
+	Ambient = Lighting.Ambient,
+	OutdoorAmbient = Lighting.OutdoorAmbient,
+	GlobalShadows = Lighting.GlobalShadows,
+	ExposureCompensation = Lighting.ExposureCompensation,
+	DiffuseScale = Lighting.EnvironmentDiffuseScale,
+	SpecularScale = Lighting.EnvironmentSpecularScale,
+}
+
+local EffectNames = { "ColorCorrectionEffect", "BloomEffect", "BlurEffect", "SunRaysEffect" }
+
+local function getEffect(className, create)
+	local name = "FemboySoft_" .. className
+	local effect = Lighting:FindFirstChild(name)
+	if not effect and create then
+		effect = Instance.new(className)
+		effect.Name = name
+		if className == "BlurEffect" then effect.Size = 0 end
+		if className == "BloomEffect" then
+			effect.Intensity = 1
+			effect.Size = 24
+			effect.Threshold = 0.8
+		end
+		effect.Parent = Lighting
+	end
+	return effect
+end
+
+local function isCharacterPart(inst)
+	local model = inst:FindFirstAncestorOfClass("Model")
+	return model ~= nil and model:FindFirstChildOfClass("Humanoid") ~= nil
+end
+
+-- Універсальний "знімок і відновлення" властивостей
+local function snapshotToggle(store, enabled, classList, property, offValue, filter)
+	if enabled then
+		for _, inst in ipairs(workspace:GetDescendants()) do
+			for _, className in ipairs(classList) do
+				if inst:IsA(className) and not inst:IsA("Terrain") and (not filter or filter(inst)) then
+					if store[inst] == nil then store[inst] = inst[property] end
+					inst[property] = offValue
+					break
+				end
+			end
+		end
+	else
+		for inst, original in pairs(store) do
+			if inst.Parent then inst[property] = original end
+			store[inst] = nil
+		end
+	end
+end
+
+local CoreTouched = {}
+local function hideCore(coreType, hide)
+	if not hide and not CoreTouched[coreType] then return end
+	CoreTouched[coreType] = true
+	pcall(function() StarterGui:SetCoreGuiEnabled(coreType, not hide) end)
+end
+
+--==================================================
+-- MENU VISIBILITY
+--==================================================
+
+local function setMenuVisible(show)
+	MenuOpen = show
+	if show then
+		Main.Visible = true
+		if Settings.MenuAnim then
+			MenuScale.Scale = (Settings.UIScale / 100) * 0.9
+			TweenService:Create(MenuScale, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = Settings.UIScale / 100 }):Play()
+		else
+			MenuScale.Scale = Settings.UIScale / 100
+		end
+	else
+		if Settings.MenuAnim then
+			local tween = TweenService:Create(MenuScale, TweenInfo.new(0.15), { Scale = (Settings.UIScale / 100) * 0.9 })
+			tween:Play()
+			tween.Completed:Connect(function()
+				if not MenuOpen then Main.Visible = false end
+			end)
+		else
+			Main.Visible = false
+		end
+	end
+end
+
+--==================================================
+-- TELEPORT FUNCTIONS
+--==================================================
+
+local function teleportToCFrame(cf, skipUndo)
+	if not Root then return end
+	if not skipUndo then LastCFrame = Root.CFrame end
+	if Settings.SmoothTP then
+		TweenService:Create(Root, TweenInfo.new(Settings.TweenTime, Enum.EasingStyle.Quad), { CFrame = cf }):Play()
+	else
+		Root.CFrame = cf
+		Root.AssemblyLinearVelocity = Vector3.zero
+	end
+end
+
+local function tpOffset(vec)
+	if Root then teleportToCFrame(Root.CFrame + vec) end
+end
+
+local function otherRoots()
+	local list = {}
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p ~= LocalPlayer and p.Character then
+			local r = p.Character:FindFirstChild("HumanoidRootPart")
+			if r then table.insert(list, { Player = p, Root = r }) end
+		end
+	end
+	return list
+end
+
+local function tpToPlayer(player)
+	local r = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if r then
+		teleportToCFrame(r.CFrame + Vector3.new(0, 3, 0))
+	else
+		notify("Player has no character")
+	end
+end
+
+local function tpRandomPlayer()
+	local list = otherRoots()
+	if #list > 0 then tpToPlayer(list[math.random(#list)].Player) else notify("No other players") end
+end
+
+local function tpNearestPlayer(furthest)
+	if not Root then return end
+	local best, bestDist
+	for _, entry in ipairs(otherRoots()) do
+		local d = (entry.Root.Position - Root.Position).Magnitude
+		if not bestDist or (furthest and d > bestDist) or (not furthest and d < bestDist) then
+			best, bestDist = entry.Player, d
+		end
+	end
+	if best then tpToPlayer(best) else notify("No other players") end
+end
+
+local function tpToCoords(text)
+	local nums = {}
+	for n in string.gmatch(text, "-?%d+%.?%d*") do table.insert(nums, tonumber(n)) end
+	if #nums >= 3 then
+		teleportToCFrame(CFrame.new(nums[1], nums[2], nums[3]))
+		notify("Teleported to coordinates")
+	else
+		notify("Use format: x, y, z", 3, true)
+	end
+end
+
+local function savePosition(slot)
+	if Root then
+		SavedSlots[slot] = Root.CFrame
+		notify("Saved position in slot " .. slot)
+	end
+end
+
+local function loadPosition(slot)
+	if SavedSlots[slot] then teleportToCFrame(SavedSlots[slot]) else notify("Slot " .. slot .. " is empty") end
+end
+
+local function undoTeleport()
+	if LastCFrame and Root then
+		local current = Root.CFrame
+		Root.CFrame = LastCFrame
+		LastCFrame = current
+	else
+		notify("Nothing to undo")
+	end
+end
+
+local function addWaypoint(name)
+	if not Root then return end
+	if name == nil or name == "" then name = "Point " .. (#Waypoints + 1) end
+	table.insert(Waypoints, { Name = name, CFrame = Root.CFrame })
+	if rebuildWaypoints then rebuildWaypoints() end
+	notify("Waypoint added: " .. name)
+end
+
+--==================================================
+-- SPECTATE / FOLLOW
+--==================================================
+
+local function stopSpectate()
+	SpectateTarget = nil
+	if Humanoid then Camera.CameraSubject = Humanoid end
+end
+
+local function spectate(player)
+	local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	if hum then
+		SpectateTarget = player
+		Camera.CameraSubject = hum
+		notify("Viewing " .. player.DisplayName)
+	else
+		notify("Player has no character")
+	end
+end
+
+local function cycleSpectate(dir)
+	local list = {}
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p ~= LocalPlayer then table.insert(list, p) end
+	end
+	if #list == 0 then return end
+	local idx = table.find(list, SpectateTarget) or 0
+	idx = (idx - 1 + dir) % #list + 1
+	spectate(list[idx])
+end
+
+local function followPlayer(player)
+	FollowTarget = player
+	notify("Following " .. player.DisplayName)
+end
+
+--==================================================
+-- CHARACTER ACTIONS
+--==================================================
+
+local function dash()
+	if not Root then return end
+	local dir = Root.CFrame.LookVector
+	if Humanoid and Humanoid.MoveDirection.Magnitude > 0 then dir = Humanoid.MoveDirection end
+	Root:ApplyImpulse(dir * Settings.DashPower * Root.AssemblyMass)
+end
+
+local function playEmote(name)
+	if Humanoid then pcall(function() Humanoid:PlayEmote(name) end) end
+end
+
+local function stopAnimations()
+	if not Humanoid then return end
+	local animator = Humanoid:FindFirstChildOfClass("Animator")
+	if animator then
+		for _, track in ipairs(animator:GetPlayingAnimationTracks()) do track:Stop() end
+	end
+end
+
+local function setCharacterScale(percent)
+	if not Humanoid then return end
+	local scale = percent / 100
+	for _, name in ipairs({ "BodyHeightScale", "BodyWidthScale", "BodyDepthScale", "HeadScale" }) do
+		local value = Humanoid:FindFirstChild(name)
+		if value then value.Value = scale end
+	end
+end
+
+local function equipNextTool()
+	local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
+	if not (backpack and Humanoid) then return end
+	local tool = backpack:FindFirstChildOfClass("Tool")
+	if tool then Humanoid:EquipTool(tool) else notify("No tools in backpack") end
+end
+
+local function sendChat(msg)
+	if msg == nil or msg == "" then return end
+	pcall(function()
+		local TextChatService = game:GetService("TextChatService")
+		if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+			local channel = TextChatService:FindFirstChild("TextChannels") and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+			if channel then channel:SendAsync(msg) end
+		else
+			game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
+		end
+	end)
+end
+
+--==================================================
+-- PANIC / RESET
+--==================================================
+
+local PanicIgnore = {
+	["Notifications"] = true,
+	["Hotkeys Enabled"] = true,
+	["Menu Animation"] = true,
+	["ESP Show Distance"] = true,
+	["ESP Show Health"] = true,
+}
+
+local function disableAll()
+	for name, toggle in pairs(Toggles) do
+		if not PanicIgnore[name] then toggle.set(false) end
+	end
+	stopSpectate()
+	FollowTarget = nil
+end
+
+local function resetSliders()
+	for name, setter in pairs(Sliders) do
+		if not SliderNoReset[name] then setter(SliderDefaults[name]) end
+	end
+end
+
+
+--==================================================
+-- PAGES CONTENT (Movement, Visual, Combat, Player)
+--==================================================
+
+createToggle(MovementPage, "Fly", false, function(enabled) Settings.Fly = enabled end)
+createToggle(MovementPage, "Noclip", false, function(enabled) Settings.Noclip = enabled end)
+createSlider(MovementPage, "Run Speed", 16, 100, 16, function(value)
+	Settings.WalkSpeed = value if Humanoid then Humanoid.WalkSpeed = value end
+end)
+createSlider(MovementPage, "Jump Power", 50, 150, 50, function(value)
+	Settings.JumpPower = value if Humanoid then Humanoid.JumpPower = value end
+end)
+createSlider(MovementPage, "Fly Speed", 10, 150, 60, function(value) Settings.FlySpeed = value end)
+
+createToggle(VisualPage, "Player ESP", false, function(enabled) Settings.ESP = enabled end)
+createSlider(VisualPage, "Camera FOV", 50, 120, 70, function(value)
+	Settings.FOV = value Camera.FieldOfView = value
+end)
+
+createToggle(CombatPage, "Aim Assist", false, function(enabled) Settings.AimAssist = enabled end)
+createSlider(CombatPage, "Aim FOV", 20, 300, 120, function(value) Settings.AimFOV = value end)
+createToggle(CombatPage, "Infinite Stamina", false, function(enabled) Settings.InfiniteStamina = enabled end)
+
+--==================================================
+-- NEW CONTENT: MOVEMENT
+--==================================================
+do
+	createSection(MovementPage, "EXTRA MOVEMENT")
+	createToggle(MovementPage, "Infinite Jump", false, function(v) Settings.InfJump = v end)
+	createToggle(MovementPage, "Bunny Hop", false, function(v) Settings.BunnyHop = v end)
+	createToggle(MovementPage, "Sprint (Hold Shift)", false, function(v) Settings.Sprint = v end)
+	createSlider(MovementPage, "Sprint Multiplier", 1, 4, 2, function(v) Settings.SprintMult = v end, { decimals = 1 })
+	createToggle(MovementPage, "Dash", false, function(v) Settings.Dash = v end)
+	createSlider(MovementPage, "Dash Power", 20, 250, 80, function(v) Settings.DashPower = v end)
+	createToggle(MovementPage, "Click Teleport (Ctrl+Click)", false, function(v) Settings.ClickTP = v end)
+	createToggle(MovementPage, "Spin Bot", false, function(v) Settings.SpinBot = v end)
+	createSlider(MovementPage, "Spin Speed", 1, 60, 20, function(v) Settings.SpinSpeed = v end)
+	createToggle(MovementPage, "Safe Fall", false, function(v) Settings.SafeFall = v end)
+	createToggle(MovementPage, "Fast Fall", false, function(v) Settings.FastFall = v end)
+	createToggle(MovementPage, "Air Walk", false, function(v) Settings.AirWalk = v end)
+	createToggle(MovementPage, "Auto Walk", false, function(v) Settings.AutoWalk = v end)
+	createToggle(MovementPage, "Anti Void", false, function(v) Settings.AntiVoid = v end)
+
+	createToggle(MovementPage, "Platform Stand", false, function(v, init)
+		Settings.PlatformStand = v
+		if init then return end
+		if Humanoid and not v then Humanoid.PlatformStand = false end
+	end)
+
+	createToggle(MovementPage, "Freeze Character", false, function(v, init)
+		Settings.Freeze = v
+		if init then return end
+		if Root then Root.Anchored = v end
+	end)
+
+	createToggle(MovementPage, "Ragdoll", false, function(v, init)
+		Settings.Ragdoll = v
+		if init or not Humanoid then return end
+		Humanoid:ChangeState(v and Enum.HumanoidStateType.Physics or Enum.HumanoidStateType.GettingUp)
+	end)
+
+	createSlider(MovementPage, "Fly Smoothness", 0, 95, 0, function(v) Settings.FlySmooth = v end, { suffix = "%" })
+
+	createSlider(MovementPage, "Hip Height", 0, 30, Humanoid and Humanoid.HipHeight or 2, function(v)
+		if Humanoid then Humanoid.HipHeight = v end
+	end, { decimals = 1, silent = true })
+
+	createSlider(MovementPage, "Max Slope Angle", 0, 89, Humanoid and math.floor(Humanoid.MaxSlopeAngle) or 89, function(v)
+		if Humanoid then Humanoid.MaxSlopeAngle = v end
+	end, { silent = true })
+
+	createToggle(MovementPage, "Auto Rotate", (Humanoid == nil) or Humanoid.AutoRotate, function(v, init)
+		if init then return end
+		if Humanoid then Humanoid.AutoRotate = v end
+	end)
+
+	createToggle(MovementPage, "Auto Jump", Humanoid and Humanoid.AutoJumpEnabled or false, function(v, init)
+		if init then return end
+		if Humanoid then Humanoid.AutoJumpEnabled = v end
+	end)
+
+	createRow(MovementPage, {
+		{ "Sit", function() if Humanoid then Humanoid.Sit = true end end },
+		{ "Jump", function() if Humanoid then Humanoid.Jump = true end end },
+		{ "Stop Velocity", function()
+			if Root then
+				Root.AssemblyLinearVelocity = Vector3.zero
+				Root.AssemblyAngularVelocity = Vector3.zero
+			end
+		end },
+	})
+
+	createRow(MovementPage, {
+		{ "Unstuck", function()
+			if Root then
+				Root.CFrame = Root.CFrame + Vector3.new(0, 10, 0)
+				Root.AssemblyLinearVelocity = Vector3.zero
+			end
+		end },
+		{ "Reset Movement", function()
+			Sliders["Run Speed"](16)
+			Sliders["Jump Power"](50)
+			Sliders["Fly Speed"](60)
+			Sliders["Sprint Multiplier"](2)
+			notify("Movement stats reset")
+		end },
+	})
+end
+
+--==================================================
+-- NEW CONTENT: VISUAL
+--==================================================
+do
+	createSection(VisualPage, "ESP EXTRAS")
+	createToggle(VisualPage, "Name Tags", false, function(v) Settings.NameESP = v end)
+	createToggle(VisualPage, "ESP Show Distance", true, function(v) Settings.ShowDistance = v end)
+	createToggle(VisualPage, "ESP Show Health", true, function(v) Settings.ShowHealth = v end)
+	createToggle(VisualPage, "Box ESP", false, function(v) Settings.BoxESP = v end)
+	createToggle(VisualPage, "Tracers", false, function(v) Settings.Tracers = v end)
+	createToggle(VisualPage, "ESP Team Check", false, function(v) Settings.ESPTeamCheck = v end)
+	createCycle(VisualPage, "ESP Color", { "Accent", "Team", "Rainbow", "Health" }, "Accent", function(opt) Settings.ESPColorMode = opt end)
+	createSlider(VisualPage, "ESP Max Distance", 50, 5000, 2000, function(v) Settings.ESPDistance = v end)
+	createSlider(VisualPage, "ESP Fill Transparency", 0, 100, 65, function(v) Settings.ESPFill = v end, { suffix = "%" })
+	createSlider(VisualPage, "ESP Outline Transparency", 0, 100, 0, function(v) Settings.ESPOutline = v end, { suffix = "%" })
+
+	createSection(VisualPage, "HUD")
+	createToggle(VisualPage, "Watermark", false, function(v) Settings.HudWatermark = v end)
+	createToggle(VisualPage, "FPS Counter", false, function(v) Settings.HudFPS = v end)
+	createToggle(VisualPage, "Ping Display", false, function(v) Settings.HudPing = v end)
+	createToggle(VisualPage, "Memory Display", false, function(v) Settings.HudMemory = v end)
+	createToggle(VisualPage, "Coordinates", false, function(v) Settings.HudCoords = v end)
+	createToggle(VisualPage, "Speedometer", false, function(v) Settings.HudSpeed = v end)
+	createToggle(VisualPage, "Clock", false, function(v) Settings.HudClock = v end)
+
+	createSection(VisualPage, "CROSSHAIR")
+	createToggle(VisualPage, "Crosshair", false, function(v) Settings.Crosshair = v updateCrosshair() end)
+	createSlider(VisualPage, "Crosshair Size", 4, 40, 10, function(v) Settings.CrosshairSize = v updateCrosshair() end)
+	createSlider(VisualPage, "Crosshair Gap", 0, 20, 4, function(v) Settings.CrosshairGap = v updateCrosshair() end)
+	createCycle(VisualPage, "Crosshair Color", { "Accent", "White", "Red", "Green", "Cyan", "Yellow" }, "Accent", function(opt)
+		Settings.CrosshairColor = opt
+		updateCrosshair()
+	end)
+
+	createSection(VisualPage, "CAMERA")
+	createToggle(VisualPage, "Zoom (Hold Key)", false, function(v) Settings.Zoom = v end)
+	createSlider(VisualPage, "Zoom FOV", 5, 60, 25, function(v) Settings.ZoomFOV = v end)
+	createToggle(VisualPage, "Freecam", false, function(v) Settings.Freecam = v end)
+	createSlider(VisualPage, "Freecam Speed", 10, 300, 60, function(v) Settings.FreecamSpeed = v end)
+
+	createToggle(VisualPage, "First Person Lock", false, function(v, init)
+		if init then return end
+		LocalPlayer.CameraMode = v and Enum.CameraMode.LockFirstPerson or Enum.CameraMode.Classic
+	end)
+
+	createSlider(VisualPage, "Max Zoom Distance", 5, 500, math.clamp(LocalPlayer.CameraMaxZoomDistance, 5, 500), function(v)
+		LocalPlayer.CameraMaxZoomDistance = v
+	end, { silent = true })
+
+	createSlider(VisualPage, "Min Zoom Distance", 0, 50, math.clamp(LocalPlayer.CameraMinZoomDistance, 0, 50), function(v)
+		LocalPlayer.CameraMinZoomDistance = v
+	end, { silent = true })
+
+	createToggle(VisualPage, "Camera Through Walls", false, function(v, init)
+		if init then return end
+		pcall(function()
+			LocalPlayer.DevCameraOcclusionMode = v and Enum.DevCameraOcclusionMode.Invisicam or Enum.DevCameraOcclusionMode.Zoom
+		end)
+	end)
+
+	createSection(VisualPage, "SELF / WORLD VIEW")
+
+	createToggle(VisualPage, "Hide My Character", false, function(v, init)
+		Settings.HideSelf = v
+		if init or v or not Character then return end
+		for _, part in ipairs(Character:GetDescendants()) do
+			if part:IsA("BasePart") then part.LocalTransparencyModifier = 0 end
+		end
+	end)
+
+	createToggle(VisualPage, "Highlight Myself", false, function(v)
+		Settings.SelfHighlight = v
+		if not v and Character then
+			local h = Character:FindFirstChild("FemboySoftSelf")
+			if h then h:Destroy() end
+		end
+	end)
+
+	do
+		local XRayStore = {}
+		local XRayConn
+		createToggle(VisualPage, "X-Ray", false, function(v, init)
+			Settings.XRay = v
+			if init then return end
+			if v then
+				for _, d in ipairs(workspace:GetDescendants()) do
+					if d:IsA("BasePart") and not d:IsA("Terrain") and not isCharacterPart(d) then
+						d.LocalTransparencyModifier = 0.65
+						XRayStore[d] = true
+					end
+				end
+				XRayConn = workspace.DescendantAdded:Connect(function(d)
+					if Settings.XRay and d:IsA("BasePart") and not isCharacterPart(d) then
+						d.LocalTransparencyModifier = 0.65
+						XRayStore[d] = true
+					end
+				end)
+			else
+				if XRayConn then XRayConn:Disconnect() XRayConn = nil end
+				for part in pairs(XRayStore) do
+					if part.Parent then part.LocalTransparencyModifier = 0 end
+					XRayStore[part] = nil
+				end
+			end
+		end)
+	end
+
+	createToggle(VisualPage, "Hide Mouse Cursor", false, function(v, init)
+		if init then return end
+		UserInputService.MouseIconEnabled = not v
+	end)
+	createToggle(VisualPage, "Hide Chat", false, function(v) hideCore(Enum.CoreGuiType.Chat, v) end)
+	createToggle(VisualPage, "Hide Player List", false, function(v) hideCore(Enum.CoreGuiType.PlayerList, v) end)
+	createToggle(VisualPage, "Hide Backpack", false, function(v) hideCore(Enum.CoreGuiType.Backpack, v) end)
+	createToggle(VisualPage, "Hide Health Bar", false, function(v) hideCore(Enum.CoreGuiType.Health, v) end)
+	createToggle(VisualPage, "Hide All Roblox UI", false, function(v) hideCore(Enum.CoreGuiType.All, v) end)
+end
+
+--==================================================
+-- NEW CONTENT: WORLD
+--==================================================
+do
+	local OrigGravity = workspace.Gravity
+	local Terrain = workspace.Terrain
+
+	createSection(WorldPage, "LIGHTING")
+
+	createToggle(WorldPage, "Fullbright", false, function(v, init)
+		Settings.Fullbright = v
+		if init or v then return end
+		Lighting.Ambient = OrigLighting.Ambient
+		Lighting.OutdoorAmbient = OrigLighting.OutdoorAmbient
+	end)
+
+	createToggle(WorldPage, "No Fog", false, function(v, init)
+		if init then return end
+		if v then
+			Lighting.FogStart = 0
+			Lighting.FogEnd = 1000000
+		else
+			Lighting.FogStart = OrigLighting.FogStart
+			Lighting.FogEnd = OrigLighting.FogEnd
+		end
+	end)
+
+	createSlider(WorldPage, "Brightness", 0, 10, OrigLighting.Brightness, function(v) Lighting.Brightness = v end, { decimals = 1, silent = true })
+	createSlider(WorldPage, "Clock Time", 0, 24, OrigLighting.ClockTime, function(v) Lighting.ClockTime = v end, { decimals = 1, silent = true })
+	createToggle(WorldPage, "Day/Night Cycle", false, function(v) Settings.DayCycle = v end)
+	createSlider(WorldPage, "Cycle Speed", 1, 100, 10, function(v) Settings.CycleSpeed = v end)
+
+	createRow(WorldPage, {
+		{ "Day", function() Sliders["Clock Time"](14) end },
+		{ "Sunset", function() Sliders["Clock Time"](18) end },
+		{ "Night", function() Sliders["Clock Time"](0) end },
+	})
+
+	createSlider(WorldPage, "Exposure", -3, 3, OrigLighting.ExposureCompensation, function(v) Lighting.ExposureCompensation = v end, { decimals = 1, silent = true })
+	createSlider(WorldPage, "Fog End", 50, 100000, math.clamp(OrigLighting.FogEnd, 50, 100000), function(v) Lighting.FogEnd = v end, { silent = true })
+	createSlider(WorldPage, "Env Diffuse", 0, 1, OrigLighting.DiffuseScale, function(v) Lighting.EnvironmentDiffuseScale = v end, { decimals = 2, silent = true })
+	createSlider(WorldPage, "Env Specular", 0, 1, OrigLighting.SpecularScale, function(v) Lighting.EnvironmentSpecularScale = v end, { decimals = 2, silent = true })
+
+	local AmbientTints = {
+		Warm = Color3.fromRGB(255, 190, 130),
+		Cool = Color3.fromRGB(130, 180, 255),
+		Pink = Color3.fromRGB(255, 130, 200),
+		Green = Color3.fromRGB(130, 255, 160),
+		Dark = Color3.fromRGB(25, 25, 35),
+	}
+	createCycle(WorldPage, "Ambient Tint", { "Default", "Warm", "Cool", "Pink", "Green", "Dark" }, "Default", function(opt, index)
+		if index == 1 and Lighting.Ambient == OrigLighting.Ambient then return end
+		if opt == "Default" then
+			Lighting.Ambient = OrigLighting.Ambient
+		else
+			Lighting.Ambient = AmbientTints[opt]
+		end
+	end)
+
+	createToggle(WorldPage, "Rainbow Ambient", false, function(v, init)
+		Settings.RainbowAmbient = v
+		if init or v then return end
+		Lighting.Ambient = OrigLighting.Ambient
+	end)
+
+	createToggle(WorldPage, "No Shadows", false, function(v, init)
+		if init then return end
+		Lighting.GlobalShadows = not v and OrigLighting.GlobalShadows
+	end)
+
+	do
+		local AtmoOrig
+		createToggle(WorldPage, "Hide Atmosphere", false, function(v)
+			local atmo = Lighting:FindFirstChildOfClass("Atmosphere")
+			if not atmo then return end
+			if v then
+				if not AtmoOrig then AtmoOrig = { atmo.Density, atmo.Haze } end
+				atmo.Density = 0
+				atmo.Haze = 0
+			elseif AtmoOrig then
+				atmo.Density, atmo.Haze = AtmoOrig[1], AtmoOrig[2]
+				AtmoOrig = nil
+			end
+		end)
+	end
+
+	createToggle(WorldPage, "Hide Clouds", false, function(v, init)
+		if init then return end
+		local clouds = Terrain:FindFirstChildOfClass("Clouds")
+		if clouds then clouds.Enabled = not v end
+	end)
+
+	createSection(WorldPage, "POST EFFECTS")
+	createSlider(WorldPage, "Saturation", -100, 200, 0, function(v) getEffect("ColorCorrectionEffect", true).Saturation = v / 100 end, { suffix = "%", silent = true })
+	createSlider(WorldPage, "Contrast", -100, 100, 0, function(v) getEffect("ColorCorrectionEffect", true).Contrast = v / 100 end, { suffix = "%", silent = true })
+	createSlider(WorldPage, "Blur Amount", 0, 56, 0, function(v) getEffect("BlurEffect", true).Size = v end, { silent = true })
+
+	createToggle(WorldPage, "Bloom", false, function(v, init)
+		if init then return end
+		getEffect("BloomEffect", true).Enabled = v
+	end)
+
+	createToggle(WorldPage, "Sun Rays", false, function(v, init)
+		if init then return end
+		getEffect("SunRaysEffect", true).Enabled = v
+	end)
+
+	createSection(WorldPage, "PHYSICS")
+	createSlider(WorldPage, "Gravity", 0, 400, math.floor(OrigGravity), function(v) workspace.Gravity = v end, { silent = true })
+	createRow(WorldPage, {
+		{ "Moon", function() Sliders["Gravity"](32) end },
+		{ "Zero-G", function() Sliders["Gravity"](0) end },
+		{ "Reset", function() Sliders["Gravity"](OrigGravity) workspace.Gravity = OrigGravity end },
+	})
+
+	createSection(WorldPage, "WATER")
+	createSlider(WorldPage, "Water Transparency", 0, 1, Terrain.WaterTransparency, function(v) Terrain.WaterTransparency = v end, { decimals = 2, silent = true })
+	createSlider(WorldPage, "Water Wave Size", 0, 1, Terrain.WaterWaveSize, function(v) Terrain.WaterWaveSize = v end, { decimals = 2, silent = true })
+	createSlider(WorldPage, "Water Reflectance", 0, 1, Terrain.WaterReflectance, function(v) Terrain.WaterReflectance = v end, { decimals = 2, silent = true })
+
+	createSection(WorldPage, "PERFORMANCE & DEBUG")
+
+	do
+		local ParticleStore, DecalStore, PlasticStore, SoundStore, HiddenStore, PromptStore = {}, {}, {}, {}, {}, {}
+
+		createToggle(WorldPage, "Disable Particles", false, function(v)
+			snapshotToggle(ParticleStore, v, { "ParticleEmitter", "Trail", "Beam", "Fire", "Smoke", "Sparkles" }, "Enabled", false)
+		end)
+		createToggle(WorldPage, "Hide Decals & Textures", false, function(v)
+			snapshotToggle(DecalStore, v, { "Decal", "Texture" }, "Transparency", 1)
+		end)
+		createToggle(WorldPage, "Plastic Materials", false, function(v)
+			snapshotToggle(PlasticStore, v, { "BasePart" }, "Material", Enum.Material.SmoothPlastic)
+		end)
+		createToggle(WorldPage, "Mute World Sounds", false, function(v)
+			snapshotToggle(SoundStore, v, { "Sound" }, "Volume", 0)
+		end)
+		createToggle(WorldPage, "Show Hidden Parts", false, function(v)
+			snapshotToggle(HiddenStore, v, { "BasePart" }, "Transparency", 0.6, function(p)
+				return p.Transparency >= 1 and p.Name ~= "FemboyAirWalk" and not isCharacterPart(p)
+			end)
+		end)
+		createToggle(WorldPage, "Instant Prompts", false, function(v)
+			snapshotToggle(PromptStore, v, { "ProximityPrompt" }, "HoldDuration", 0)
+		end)
+	end
+
+	do
+		local okDec, origDec = pcall(function() return Terrain.Decoration end)
+		createToggle(WorldPage, "Hide Terrain Decoration", false, function(v, init)
+			if init or not okDec then return end
+			pcall(function() Terrain.Decoration = v and false or origDec end)
+		end)
+	end
+end
+
+--==================================================
+-- NEW CONTENT: COMBAT
+--==================================================
+do
+	createSection(CombatPage, "AIM SETTINGS")
+	createToggle(CombatPage, "Show FOV Circle", false, function(v) Settings.FOVCircle = v end)
+	createSlider(CombatPage, "Aim Smoothness", 1, 100, 100, function(v) Settings.AimSmooth = v end, { suffix = "%" })
+	createCycle(CombatPage, "Aim Part", { "Head", "Torso", "HumanoidRootPart" }, "Head", function(opt) Settings.AimPart = opt end)
+	createCycle(CombatPage, "Aim Key", { "Right Mouse", "Left Mouse", "Hold E", "Always" }, "Right Mouse", function(opt) Settings.AimKey = opt end)
+	createToggle(CombatPage, "Aim Team Check", false, function(v) Settings.AimTeamCheck = v end)
+	createToggle(CombatPage, "Aim Wall Check", false, function(v) Settings.AimWallCheck = v end)
+	createSlider(CombatPage, "Aim Prediction", 0, 50, 0, function(v) Settings.AimPrediction = v end)
+	createSlider(CombatPage, "Aim Max Distance", 50, 3000, 1000, function(v) Settings.AimDistance = v end)
+
+	createSection(CombatPage, "SURVIVAL (client-side)")
+	createToggle(CombatPage, "God Mode", false, function(v) Settings.GodMode = v end)
+	createToggle(CombatPage, "Auto Heal", false, function(v) Settings.AutoHeal = v end)
+	createSlider(CombatPage, "Heal Rate", 1, 100, 10, function(v) Settings.HealRate = v end)
+
+	createToggle(CombatPage, "Local ForceField", false, function(v)
+		Settings.LocalFF = v
+		if not v and Character then
+			local ff = Character:FindFirstChild("FemboySoftFF")
+			if ff then ff:Destroy() end
+		end
+	end)
+
+	createSection(CombatPage, "TOOLS")
+	createToggle(CombatPage, "Auto Activate Tool", false, function(v) Settings.AutoTool = v end)
+	createSlider(CombatPage, "Tool Delay (ms)", 30, 1000, 150, function(v) Settings.ToolDelay = v end)
+	createToggle(CombatPage, "Auto Equip Tool", false, function(v) Settings.AutoEquip = v end)
+	createRow(CombatPage, {
+		{ "Equip Next Tool", function() equipNextTool() end },
+		{ "Unequip All", function() if Humanoid then Humanoid:UnequipTools() end end },
+	})
+end
+
+--==================================================
+-- NEW CONTENT: PLAYER
+--==================================================
+do
+	createSection(PlayerPage, "CHARACTER")
+
+	createSlider(PlayerPage, "Max Health", 1, 1000, Humanoid and math.floor(Humanoid.MaxHealth) or 100, function(v)
+		if Humanoid then
+			Humanoid.MaxHealth = v
+			Humanoid.Health = v
+		end
+	end, { silent = true })
+
+	createSlider(PlayerPage, "Character Scale", 50, 300, 100, function(v) setCharacterScale(v) end, { suffix = "%", silent = true })
+
+	createSlider(PlayerPage, "Camera Offset Y", -5, 10, 0, function(v)
+		if Humanoid then Humanoid.CameraOffset = Vector3.new(0, v, 0) end
+	end, { decimals = 1, silent = true })
+
+	createSlider(PlayerPage, "Animation Speed", 10, 300, 100, function(v) Settings.AnimSpeed = v end, { suffix = "%" })
+
+	createRow(PlayerPage, {
+		{ "Heal Now", function() if Humanoid then Humanoid.Health = Humanoid.MaxHealth end end },
+		{ "Reset Character", function() if Humanoid then Humanoid.Health = 0 end end },
+		{ "Quick Respawn", function()
+			if Root and Humanoid then
+				PendingRespawn = Root.CFrame
+				Humanoid.Health = 0
+			end
+		end },
+	})
+
+	createSection(PlayerPage, "EMOTES")
+	createRow(PlayerPage, {
+		{ "Wave", function() playEmote("wave") end },
+		{ "Cheer", function() playEmote("cheer") end },
+		{ "Dance", function() playEmote("dance") end },
+	})
+	createRow(PlayerPage, {
+		{ "Laugh", function() playEmote("laugh") end },
+		{ "Point", function() playEmote("point") end },
+		{ "Stop Anims", function() stopAnimations() end },
+	})
+
+	createSection(PlayerPage, "SPECTATE & FOLLOW")
+	createRow(PlayerPage, {
+		{ "< Prev", function() cycleSpectate(-1) end },
+		{ "Stop View", function() stopSpectate() end },
+		{ "Next >", function() cycleSpectate(1) end },
+	})
+	createSlider(PlayerPage, "Follow Distance", 2, 30, 5, function(v) Settings.FollowDistance = v end)
+	createButton(PlayerPage, "Stop Following", function()
+		FollowTarget = nil
+		notify("Stopped following")
+	end)
+
+	createSection(PlayerPage, "PLAYERS   (TP | VIEW | FOLLOW)")
+	local PlayerRowsList = createList(PlayerPage)
+
+	rebuildPlayers = function()
+		clearList(PlayerRowsList)
+		for _, player in ipairs(Players:GetPlayers()) do
+			if player ~= LocalPlayer then
+				createRow(PlayerRowsList, {
+					{ player.DisplayName, function() tpToPlayer(player) end },
+					{ "View", function() spectate(player) end },
+					{ "Follow", function() followPlayer(player) end },
+				}, 38)
+			end
+		end
+		applyTheme()
+	end
+
+	rebuildPlayers()
+	connect(Players.PlayerAdded, function() task.defer(rebuildPlayers) end)
+	connect(Players.PlayerRemoving, function() task.defer(rebuildPlayers) end)
+end
+
+--==================================================
+-- NEW CONTENT: TELEPORT
+--==================================================
+do
+	createSection(TeleportPage, "QUICK TELEPORT")
+	createRow(TeleportPage, {
+		{ "Forward", function() if Root then tpOffset(Root.CFrame.LookVector * Settings.TPDistance) end end },
+		{ "Up", function() tpOffset(Vector3.new(0, Settings.TPDistance, 0)) end },
+		{ "Down", function() tpOffset(Vector3.new(0, -Settings.TPDistance, 0)) end },
+	})
+	createSlider(TeleportPage, "TP Distance", 5, 500, 25, function(v) Settings.TPDistance = v end)
+
+	local function findSpawns()
+		local list = {}
+		for _, d in ipairs(workspace:GetDescendants()) do
+			if d:IsA("SpawnLocation") then table.insert(list, d) end
+		end
+		return list
+	end
+
+	createRow(TeleportPage, {
+		{ "To Spawn", function()
+			local spawn = LocalPlayer.RespawnLocation or findSpawns()[1]
+			if spawn then teleportToCFrame(spawn.CFrame + Vector3.new(0, 4, 0)) else notify("No spawn found") end
+		end },
+		{ "To Origin", function() teleportToCFrame(CFrame.new(0, 10, 0)) end },
+		{ "To Mouse", function()
+			if Mouse.Hit then teleportToCFrame(CFrame.new(Mouse.Hit.Position + Vector3.new(0, 3, 0))) end
+		end },
+	})
+	createRow(TeleportPage, {
+		{ "Random Player", function() tpRandomPlayer() end },
+		{ "Nearest", function() tpNearestPlayer(false) end },
+		{ "Furthest", function() tpNearestPlayer(true) end },
+	})
+	createButton(TeleportPage, "Undo Teleport", function() undoTeleport() end)
+
+	createToggle(TeleportPage, "Smooth Teleport", false, function(v) Settings.SmoothTP = v end)
+	createSlider(TeleportPage, "Tween Time", 0.1, 5, 0.5, function(v) Settings.TweenTime = v end, { decimals = 1 })
+	createToggle(TeleportPage, "Respawn At Death Position", false, function(v) Settings.SpawnAtDeath = v end)
+
+	createSection(TeleportPage, "COORDINATES")
+	createTextBox(TeleportPage, "x, y, z   (press Enter to teleport)", function(text) tpToCoords(text) end)
+	createButton(TeleportPage, "Print My Position", function()
+		if Root then
+			local p = Root.Position
+			print(string.format("[FemboySoft] Position: %.1f, %.1f, %.1f", p.X, p.Y, p.Z))
+			notify(string.format("%.0f, %.0f, %.0f  (see Output)", p.X, p.Y, p.Z))
+		end
+	end)
+
+	createSection(TeleportPage, "SAVED SLOTS")
+	createRow(TeleportPage, {
+		{ "Save 1", function() savePosition(1) end },
+		{ "Save 2", function() savePosition(2) end },
+		{ "Save 3", function() savePosition(3) end },
+	})
+	createRow(TeleportPage, {
+		{ "Load 1", function() loadPosition(1) end },
+		{ "Load 2", function() loadPosition(2) end },
+		{ "Load 3", function() loadPosition(3) end },
+	})
+
+	createSection(TeleportPage, "WAYPOINTS")
+	createTextBox(TeleportPage, "Waypoint name   (press Enter to add)", function(text, box)
+		addWaypoint(text)
+		box.Text = ""
+	end)
+	createButton(TeleportPage, "Add Waypoint Here", function() addWaypoint("") end)
+	local WaypointList = createList(TeleportPage)
+
+	rebuildWaypoints = function()
+		clearList(WaypointList)
+		for index, wp in ipairs(Waypoints) do
+			createRow(WaypointList, {
+				{ "TP: " .. wp.Name, function() teleportToCFrame(wp.CFrame) end },
+				{ "Delete", function()
+					table.remove(Waypoints, index)
+					rebuildWaypoints()
+				end },
+			}, 36)
+		end
+		applyTheme()
+	end
+
+	createSection(TeleportPage, "MAP SPAWNS")
+	createButton(TeleportPage, "Refresh Spawns", function() rebuildSpawns() end)
+	local SpawnList = createList(TeleportPage)
+
+	rebuildSpawns = function()
+		clearList(SpawnList)
+		for i, spawn in ipairs(findSpawns()) do
+			if i > 20 then break end
+			createButton(SpawnList, "Spawn: " .. spawn.Name, function()
+				teleportToCFrame(spawn.CFrame + Vector3.new(0, 4, 0))
+			end)
+		end
+		applyTheme()
+	end
+
+	rebuildSpawns()
+end
+
+--==================================================
+-- NEW CONTENT: UTILITY
+--==================================================
+do
+	createSection(UtilityPage, "GENERAL")
+	createToggle(UtilityPage, "Notifications", true, function(v) Settings.Notifications = v end)
+	createToggle(UtilityPage, "Hotkeys Enabled", true, function(v) Settings.Hotkeys = v end)
+	createToggle(UtilityPage, "Anti AFK", false, function(v) Settings.AntiAFK = v end)
+
+	createSection(UtilityPage, "LIVE INFO")
+	createInfo(UtilityPage, "FPS: ", function() return tostring(math.floor(fpsAverage)) end)
+	createInfo(UtilityPage, "Ping: ", function() return math.floor(LocalPlayer:GetNetworkPing() * 1000) .. " ms" end)
+	createInfo(UtilityPage, "Players: ", function() return #Players:GetPlayers() .. " / " .. Players.MaxPlayers end)
+	createInfo(UtilityPage, "Memory: ", function() return math.floor(StatsService:GetTotalMemoryUsageMb()) .. " MB" end)
+	createInfo(UtilityPage, "Place ID: ", function() return tostring(game.PlaceId) end)
+	createInfo(UtilityPage, "Job ID: ", function() return game.JobId ~= "" and string.sub(game.JobId, 1, 18) or "Studio" end)
+	createInfo(UtilityPage, "Session: ", function()
+		local t = math.floor(os.clock() - StartClock)
+		return string.format("%02d:%02d:%02d", math.floor(t / 3600), math.floor(t % 3600 / 60), t % 60)
+	end)
+	createInfo(UtilityPage, "Position: ", function()
+		if not Root then return "-" end
+		local p = Root.Position
+		return string.format("%.0f, %.0f, %.0f", p.X, p.Y, p.Z)
+	end)
+	createInfo(UtilityPage, "Speed: ", function()
+		if not Root then return "-" end
+		local v = Root.AssemblyLinearVelocity
+		return string.format("%.1f studs/s", Vector3.new(v.X, 0, v.Z).Magnitude)
+	end)
+	createInfo(UtilityPage, "Health: ", function()
+		if not Humanoid then return "-" end
+		return math.floor(Humanoid.Health) .. " / " .. math.floor(Humanoid.MaxHealth)
+	end)
+
+	createSection(UtilityPage, "TOOLS")
+	createRow(UtilityPage, {
+		{ "Rejoin", function()
+			notify("Rejoining...", 3, true)
+			pcall(function() TeleportService:Teleport(game.PlaceId, LocalPlayer) end)
+		end },
+		{ "Print Players", function()
+			for _, p in ipairs(Players:GetPlayers()) do
+				print(string.format("[FemboySoft] %s (@%s) id=%d", p.DisplayName, p.Name, p.UserId))
+			end
+			notify("Player list printed to Output")
+		end },
+	})
+	createRow(UtilityPage, {
+		{ "Print Stats", function()
+			print("[FemboySoft] Workspace descendants:", #workspace:GetDescendants())
+			print("[FemboySoft] Gravity:", workspace.Gravity, "| FPS:", math.floor(fpsAverage))
+			notify("Stats printed to Output")
+		end },
+		{ "Print Camera", function() print("[FemboySoft] Camera CFrame:", Camera.CFrame) notify("Camera CFrame printed to Output") end },
+	})
+	createTextBox(UtilityPage, "Send chat message   (press Enter)", function(text, box)
+		sendChat(text)
+		box.Text = ""
+	end)
+
+	createSection(UtilityPage, "SAFETY")
+	createRow(UtilityPage, {
+		{ "Panic (all OFF)", function() disableAll() notify("All features disabled", 2.5, true) end },
+		{ "Reset Sliders", function() resetSliders() notify("Sliders reset", 2.5, true) end },
+	})
+end
+
+
+--==================================================
+-- SETTINGS PAGE (APPEARANCE CUSTOMIZATION)
+--==================================================
+
+-- 1. Перемикач теми (Dark / Light)
+local ThemeButton = Instance.new("TextButton")
+ThemeButton.Size = UDim2.new(1, -8, 0, 42)
+ThemeButton.Text = "Theme: Dark Glass"
+ThemeButton.Font = Enum.Font.GothamMedium
+ThemeButton.TextSize = 13
+ThemeButton.Parent = SettingsPage
+table.insert(ThemeRegistry.Elements, ThemeButton)
+table.insert(ThemeRegistry.TextPrimary, ThemeButton)
+
+local TBC = Instance.new("UICorner") TBC.CornerRadius = UDim.new(0, 8) TBC.Parent = ThemeButton
+local TBS = Instance.new("UIStroke") TBS.Thickness = 1 TBS.Parent = ThemeButton table.insert(ThemeRegistry.Strokes, TBS)
+
+ThemeButton.MouseButton1Click:Connect(function()
+	if Settings.CurrentTheme == "Dark" then
+		Settings.CurrentTheme = "Light"
+		ThemeButton.Text = "Theme: Light Glass"
+	else
+		Settings.CurrentTheme = "Dark"
+		ThemeButton.Text = "Theme: Dark Glass"
+	end
+	applyTheme()
+end)
+
+-- 2. Перемикач акцентного кольору (Pink, Cyan, Purple, Mint, Gold, Custom + Rainbow)
+Accents.Custom = Color3.fromRGB(255, 130, 180)
+Accents.Rainbow = Color3.fromRGB(255, 130, 180)
+
+local AccentButton = Instance.new("TextButton")
+AccentButton.Size = UDim2.new(1, -8, 0, 42)
+AccentButton.Text = "Accent Color: Pink"
+AccentButton.Font = Enum.Font.GothamMedium
+AccentButton.TextSize = 13
+AccentButton.Parent = SettingsPage
+table.insert(ThemeRegistry.Elements, AccentButton)
+table.insert(ThemeRegistry.TextPrimary, AccentButton)
+
+local ABC = Instance.new("UICorner") ABC.CornerRadius = UDim.new(0, 8) ABC.Parent = AccentButton
+local ABS = Instance.new("UIStroke") ABS.Thickness = 1 ABS.Parent = AccentButton table.insert(ThemeRegistry.Strokes, ABS)
+
+local accentKeys = {"Pink", "Cyan", "Purple", "Mint", "Gold", "Custom"}
+
+local function refreshAccentText()
+	AccentButton.Text = "Accent Color: " .. Settings.AccentName
+end
+
+AccentButton.MouseButton1Click:Connect(function()
+	if Settings.RainbowAccent and Toggles["Rainbow Accent"] then
+		Toggles["Rainbow Accent"].set(false)
+	end
+	local idx = table.find(accentKeys, Settings.AccentName) or 0
+	idx = idx % #accentKeys + 1
+	Settings.AccentName = accentKeys[idx]
+	refreshAccentText()
+	applyTheme()
+end)
+
+-- 3. Слайдер прозорості скла (Glass Opacity)
+local OpacityFrame = Instance.new("Frame")
+OpacityFrame.Size = UDim2.new(1, -8, 0, 60)
+OpacityFrame.BorderSizePixel = 0
+OpacityFrame.Parent = SettingsPage
+table.insert(ThemeRegistry.Elements, OpacityFrame)
+
+local OFC = Instance.new("UICorner") OFC.CornerRadius = UDim.new(0, 8) OFC.Parent = OpacityFrame
+local OFS = Instance.new("UIStroke") OFS.Thickness = 1 OFS.Parent = OpacityFrame table.insert(ThemeRegistry.Strokes, OFS)
+
+local OpLabel = Instance.new("TextLabel")
+OpLabel.Size = UDim2.new(0.7, 0, 0, 25) OpLabel.Position = UDim2.fromOffset(14, 5)
+OpLabel.BackgroundTransparency = 1 OpLabel.Text = "Glass Opacity"
+OpLabel.Font = Enum.Font.GothamMedium OpLabel.TextSize = 13 OpLabel.TextXAlignment = Enum.TextXAlignment.Left
+OpLabel.Parent = OpacityFrame table.insert(ThemeRegistry.TextPrimary, OpLabel)
+
+local OpVal = Instance.new("TextLabel")
+OpVal.Size = UDim2.new(0.3, -14, 0, 25) OpVal.Position = UDim2.new(0.7, 0, 0, 5)
+OpVal.BackgroundTransparency = 1 OpVal.Text = "35%"
+OpVal.Font = Enum.Font.Gotham OpVal.TextSize = 12 OpVal.TextXAlignment = Enum.TextXAlignment.Right
+OpVal.Parent = OpacityFrame table.insert(ThemeRegistry.TextSecondary, OpVal)
+
+local OpBar = Instance.new("Frame")
+OpBar.Size = UDim2.new(1, -28, 0, 4) OpBar.Position = UDim2.fromOffset(14, 38)
+OpBar.BackgroundColor3 = Color3.fromRGB(150, 150, 160) OpBar.BackgroundTransparency = 0.6 OpBar.BorderSizePixel = 0
+OpBar.Parent = OpacityFrame
+
+local OpBC = Instance.new("UICorner") OpBC.CornerRadius = UDim.new(1, 0) OpBC.Parent = OpBar
+local OpFill = Instance.new("Frame")
+OpFill.Name = "Fill"
+OpFill.Size = UDim2.fromScale(0.35, 1) OpFill.BorderSizePixel = 0 OpFill.Parent = OpBar
+table.insert(ThemeRegistry.Accents, OpFill)
+local OpFC = Instance.new("UICorner") OpFC.CornerRadius = UDim.new(1, 0) OpFC.Parent = OpFill
+
+local opDragging = false
+OpBar.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then opDragging = true end end)
+connect(UserInputService.InputEnded, function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then opDragging = false end end)
+connect(UserInputService.InputChanged, function(input)
+	if opDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local percent = math.clamp((input.Position.X - OpBar.AbsolutePosition.X) / OpBar.AbsoluteSize.X, 0.1, 0.9)
+		Settings.CustomAlpha = percent
+		OpFill.Size = UDim2.fromScale(percent, 1)
+		OpVal.Text = math.floor(percent * 100) .. "%"
+		applyTheme()
+	end
+end)
+
+-- 4. Налаштування клавіші меню (Keybind)
+createKeybind(SettingsPage, "Menu Key", function() return Settings.MenuKey end, function(k) Settings.MenuKey = k end)
+
+--==================================================
+-- NEW CONTENT: SETTINGS (interface / keybinds)
+--==================================================
+do
+	createSection(SettingsPage, "INTERFACE")
+
+	createSlider(SettingsPage, "UI Scale", 50, 150, 100, function(v)
+		Settings.UIScale = v
+		MenuScale.Scale = v / 100
+	end, { suffix = "%", noReset = true })
+
+	createSlider(SettingsPage, "Corner Radius", 0, 30, 16, function(v)
+		MainCorner.CornerRadius = UDim.new(0, v)
+	end, { noReset = true })
+
+	createToggle(SettingsPage, "Menu Animation", true, function(v) Settings.MenuAnim = v end)
+
+	do
+		local PrevAccent
+		createToggle(SettingsPage, "Rainbow Accent", false, function(v, init)
+			Settings.RainbowAccent = v
+			if init then return end
+			if v then
+				if Settings.AccentName ~= "Rainbow" then PrevAccent = Settings.AccentName end
+				Settings.AccentName = "Rainbow"
+			else
+				Settings.AccentName = PrevAccent or "Pink"
+			end
+			refreshAccentText()
+			applyTheme()
+		end)
+	end
+
+	do
+		local custom = { 255, 130, 180 }
+		local function updateCustom()
+			Accents.Custom = Color3.fromRGB(custom[1], custom[2], custom[3])
+			if Settings.AccentName == "Custom" then applyTheme() end
+		end
+		createSlider(SettingsPage, "Custom Accent R", 0, 255, 255, function(v) custom[1] = v updateCustom() end, { noReset = true })
+		createSlider(SettingsPage, "Custom Accent G", 0, 255, 130, function(v) custom[2] = v updateCustom() end, { noReset = true })
+		createSlider(SettingsPage, "Custom Accent B", 0, 255, 180, function(v) custom[3] = v updateCustom() end, { noReset = true })
+	end
+
+	createSection(SettingsPage, "KEYBINDS")
+
+	local keybindDefs = {
+		{ "Fly Key", "Fly" },
+		{ "Noclip Key", "Noclip" },
+		{ "ESP Key", "ESP" },
+		{ "Aim Assist Key", "Aim" },
+		{ "Infinite Jump Key", "InfJump" },
+		{ "Freecam Key", "Freecam" },
+		{ "Fullbright Key", "Fullbright" },
+		{ "Dash Key", "Dash" },
+		{ "Zoom Key", "Zoom" },
+		{ "Fast Fall Key", "FastFall" },
+		{ "Panic Key", "Panic" },
+	}
+
+	for _, def in ipairs(keybindDefs) do
+		createKeybind(SettingsPage, def[1], function() return Settings.Keys[def[2]] end, function(k) Settings.Keys[def[2]] = k end)
+	end
+
+	createSection(SettingsPage, "DANGER ZONE")
+	createButton(SettingsPage, "Unload Menu", function() unload() end)
+end
+
+--==================================================
+-- DRAG WINDOW
+--==================================================
+
+local draggingWindow = false
+local dragStart, startPosition
+
+Title.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		draggingWindow = true dragStart = input.Position startPosition = Main.Position
+	end
+end)
+
+connect(UserInputService.InputChanged, function(input)
+	if draggingWindow and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local delta = input.Position - dragStart
+		Main.Position = UDim2.new(startPosition.X.Scale, startPosition.X.Offset + delta.X, startPosition.Y.Scale, startPosition.Y.Offset + delta.Y)
+	end
+end)
+
+connect(UserInputService.InputEnded, function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingWindow = false end
+end)
+
+--==================================================
+-- FUNCTIONAL MODULES (Fly, Noclip, ESP, Aim)
+--==================================================
+
+local FlyVelocity, FlyConnection
+
+local function startFly()
+	if not Root then return end
+	FlyVelocity = Instance.new("BodyVelocity")
+	FlyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+	FlyVelocity.Velocity = Vector3.zero
+	FlyVelocity.Parent = Root
+
+	FlyConnection = connect(RunService.RenderStepped, function()
+		if not Settings.Fly or not Root then return end
+		local direction = Vector3.zero
+		if UserInputService:IsKeyDown(Enum.KeyCode.W) then direction += Camera.CFrame.LookVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.S) then direction -= Camera.CFrame.LookVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.A) then direction -= Camera.CFrame.RightVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.D) then direction += Camera.CFrame.RightVector end
+		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then direction += Vector3.yAxis end
+		if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then direction -= Vector3.yAxis end
+
+		local target = Vector3.zero
+		if direction.Magnitude > 0 then target = direction.Unit * Settings.FlySpeed end
+		FlyVelocity.Velocity = FlyVelocity.Velocity:Lerp(target, 1 - Settings.FlySmooth / 100)
+	end)
+end
+
+local function stopFly()
+	if FlyConnection then FlyConnection:Disconnect() FlyConnection = nil end
+	if FlyVelocity then FlyVelocity:Destroy() FlyVelocity = nil end
+end
+
+local function noclip()
+	if not Character then return end
+	for _, part in ipairs(Character:GetDescendants()) do
+		if part:IsA("BasePart") then part.CanCollide = not Settings.Noclip end
+	end
+end
+
+local ESPObjects = {}
+local ESPHooked = {}
+
+local function removeESP(player)
+	if ESPObjects[player] then ESPObjects[player]:Destroy() ESPObjects[player] = nil end
+end
+
+local function createESP(player)
+	if player == LocalPlayer or ESPObjects[player] then return end
+
+	local function apply(character)
+		if not Settings.ESP or not character then return end
+		local highlight = Instance.new("Highlight")
+		highlight.Name = "FemboySoftESP"
+		highlight.FillColor = Accents[Settings.AccentName]
+		highlight.FillTransparency = 0.65
+		highlight.OutlineTransparency = 0
+		highlight.Parent = character
+		ESPObjects[player] = highlight
+	end
+
+	if player.Character then apply(player.Character) end
+
+	if not ESPHooked[player] then
+		ESPHooked[player] = true
+		player.CharacterAdded:Connect(function(character)
+			task.wait(0.5)
+			if Settings.ESP then
+				removeESP(player)
+				apply(character)
+			end
+		end)
+	end
+end
+
+local function updateESP()
+	if Settings.ESP then
+		for _, player in ipairs(Players:GetPlayers()) do createESP(player) end
+		-- Оновлюємо колір підсвічування на льоту, якщо змінили акцент
+		for _, highlight in pairs(ESPObjects) do
+			if highlight and highlight.Parent then
+				highlight.FillColor = Accents[Settings.AccentName]
+			end
+		end
+	else
+		for player in pairs(ESPObjects) do removeESP(player) end
+	end
+end
+
+local function getClosestTarget()
+	if not Root then return nil end
+	local closest, closestDistance = nil, Settings.AimFOV
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer and player.Character then
+			local targetRoot = player.Character:FindFirstChild("HumanoidRootPart")
+			local targetHumanoid = player.Character:FindFirstChildOfClass("Humanoid")
+
+			if targetRoot and targetHumanoid and targetHumanoid.Health > 0 then
+				local screenPosition, visible = Camera:WorldToViewportPoint(targetRoot.Position)
+				if visible then
+					local distance = (Vector2.new(screenPosition.X, screenPosition.Y) - UserInputService:GetMouseLocation()).Magnitude
+					if distance < closestDistance then
+						closestDistance = distance
+						closest = targetRoot
+					end
+				end
+			end
+		end
+	end
+	return closest
+end
+
+--==================================================
+-- NEW FEATURE LOOPS
+--==================================================
+
+local TagObjects, BoxObjects, TracerLines = {}, {}, {}
+local StaminaMax = {}
+
+-- Стан, що змінюється кожен кадр (в одній таблиці, щоб не засмічувати локальні змінні)
+local RT = {
+	hue = 0, slow = 0, info = 0, tool = 0, accent = 0,
+	fov = Settings.FOV, air = nil, airY = nil, safe = nil, animWas = false,
+}
+local freecam = { Active = false, Pos = Vector3.zero, Pitch = 0, Yaw = 0 }
+
+local function typing()
+	return UserInputService:GetFocusedTextBox() ~= nil
+end
+
+local function accentColor()
+	return Accents[Settings.AccentName] or Accents.Pink
+end
+
+----------------------------------------------------
+-- ESP extras (name tags, boxes, tracers, colors)
+----------------------------------------------------
+
+local function removeVisuals(player)
+	local tag = TagObjects[player]
+	if tag then tag.Gui:Destroy() TagObjects[player] = nil end
+	local box = BoxObjects[player]
+	if box then box.Inst:Destroy() BoxObjects[player] = nil end
+	local line = TracerLines[player]
+	if line then line:Destroy() TracerLines[player] = nil end
+end
+
+local function espColorFor(player, hum)
+	local mode = Settings.ESPColorMode
+	if mode == "Team" and player.Team then return player.TeamColor.Color end
+	if mode == "Rainbow" then return Color3.fromHSV(RT.hue, 1, 1) end
+	if mode == "Health" and hum and hum.MaxHealth > 0 then
+		return Color3.fromHSV(math.clamp(hum.Health / hum.MaxHealth, 0, 1) * 0.33, 1, 1)
+	end
+	return accentColor()
+end
+
+local function getTag(player, character, adornee)
+	local d = TagObjects[player]
+	if d and (d.Character ~= character or not d.Gui.Parent) then
+		d.Gui:Destroy()
+		d = nil
+		TagObjects[player] = nil
+	end
+	if not d then
+		local gui = Instance.new("BillboardGui")
+		gui.Name = "FemboySoftTag"
+		gui.Size = UDim2.fromOffset(180, 44)
+		gui.StudsOffset = Vector3.new(0, 3, 0)
+		gui.AlwaysOnTop = true
+		gui.Adornee = adornee
+
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.fromScale(1, 1)
+		label.BackgroundTransparency = 1
+		label.Font = Enum.Font.GothamBold
+		label.TextSize = 13
+		label.TextStrokeTransparency = 0.4
+		label.Parent = gui
+
+		gui.Parent = character
+		d = { Gui = gui, Label = label, Character = character }
+		TagObjects[player] = d
+	end
+	return d
+end
+
+local function getBox(player, character)
+	local d = BoxObjects[player]
+	if d and (d.Character ~= character or not d.Inst.Parent) then
+		d.Inst:Destroy()
+		d = nil
+		BoxObjects[player] = nil
+	end
+	if not d then
+		local box = Instance.new("SelectionBox")
+		box.Name = "FemboySoftBox"
+		box.LineThickness = 0.04
+		box.SurfaceTransparency = 1
+		box.Adornee = character
+		box.Parent = character
+		d = { Inst = box, Character = character }
+		BoxObjects[player] = d
+	end
+	return d
+end
+
+local function getTracer(player)
+	local line = TracerLines[player]
+	if not line then
+		line = Instance.new("Frame")
+		line.AnchorPoint = Vector2.new(0.5, 0.5)
+		line.BorderSizePixel = 0
+		line.Parent = TracerFolder
+		TracerLines[player] = line
+	end
+	return line
+end
+
+local function updateExtraESP()
+	local origin = Camera.CFrame.Position
+	local viewport = Camera.ViewportSize
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer then
+			local character = player.Character
+			local hum = character and character:FindFirstChildOfClass("Humanoid")
+			local hrp = character and character:FindFirstChild("HumanoidRootPart")
+			local visible, dist = false, 0
+
+			if hum and hrp and hum.Health > 0 then
+				dist = (hrp.Position - origin).Magnitude
+				visible = dist <= Settings.ESPDistance
+				if visible and Settings.ESPTeamCheck and player.Team ~= nil and player.Team == LocalPlayer.Team then
+					visible = false
+				end
+			end
+
+			local color = visible and espColorFor(player, hum) or nil
+
+			-- Highlight (з оригінального ESP)
+			local highlight = ESPObjects[player]
+			if highlight and highlight.Parent then
+				highlight.Enabled = visible
+				if visible then
+					highlight.FillColor = color
+					highlight.OutlineColor = color
+					highlight.FillTransparency = Settings.ESPFill / 100
+					highlight.OutlineTransparency = Settings.ESPOutline / 100
+				end
+			end
+
+			-- Name tag
+			local tag = TagObjects[player]
+			if visible and Settings.NameESP then
+				local d = getTag(player, character, character:FindFirstChild("Head") or hrp)
+				local text = player.DisplayName
+				local info = {}
+				if Settings.ShowDistance then table.insert(info, math.floor(dist) .. "m") end
+				if Settings.ShowHealth then table.insert(info, math.floor(hum.Health) .. " HP") end
+				if #info > 0 then text = text .. "\n" .. table.concat(info, "  |  ") end
+				d.Label.Text = text
+				d.Label.TextColor3 = color
+				d.Gui.Enabled = true
+			elseif tag then
+				tag.Gui.Enabled = false
+			end
+
+			-- Box
+			local box = BoxObjects[player]
+			if visible and Settings.BoxESP then
+				local d = getBox(player, character)
+				d.Inst.Color3 = color
+				d.Inst.Visible = true
+			elseif box then
+				box.Inst.Visible = false
+			end
+
+			-- Tracer
+			local line = TracerLines[player]
+			if visible and Settings.Tracers then
+				local screen, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+				if onScreen then
+					line = line or getTracer(player)
+					local from = Vector2.new(viewport.X / 2, viewport.Y)
+					local to = Vector2.new(screen.X, screen.Y)
+					local delta = to - from
+					line.Size = UDim2.fromOffset(delta.Magnitude, 1.5)
+					line.Position = UDim2.fromOffset((from.X + to.X) / 2, (from.Y + to.Y) / 2)
+					line.Rotation = math.deg(math.atan2(delta.Y, delta.X))
+					line.BackgroundColor3 = color
+					line.Visible = true
+				elseif line then
+					line.Visible = false
+				end
+			elseif line then
+				line.Visible = false
+			end
+		end
+	end
+end
+
+----------------------------------------------------
+-- Aim assist (розширений)
+----------------------------------------------------
+
+local function aimKeyDown()
+	local mode = Settings.AimKey
+	if mode == "Right Mouse" then return UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) end
+	if mode == "Left Mouse" then return UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) end
+	if mode == "Hold E" then return UserInputService:IsKeyDown(Enum.KeyCode.E) end
+	return true
+end
+
+local function getAimPart(character)
+	local name = Settings.AimPart
+	if name == "Torso" then
+		return character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso") or character:FindFirstChild("HumanoidRootPart")
+	end
+	return character:FindFirstChild(name) or character:FindFirstChild("HumanoidRootPart")
+end
+
+local function hasLineOfSight(part)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { Character, part.Parent }
+	params.IgnoreWater = true
+	local origin = Camera.CFrame.Position
+	return workspace:Raycast(origin, part.Position - origin, params) == nil
+end
+
+local function getAimTarget()
+	local mouse = UserInputService:GetMouseLocation()
+	local origin = Camera.CFrame.Position
+	local best, bestDist = nil, Settings.AimFOV
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer and player.Character then
+			local hum = player.Character:FindFirstChildOfClass("Humanoid")
+			local part = getAimPart(player.Character)
+			if hum and part and hum.Health > 0 then
+				local sameTeam = Settings.AimTeamCheck and player.Team ~= nil and player.Team == LocalPlayer.Team
+				if not sameTeam and (part.Position - origin).Magnitude <= Settings.AimDistance then
+					local screen, onScreen = Camera:WorldToViewportPoint(part.Position)
+					if onScreen then
+						local d = (Vector2.new(screen.X, screen.Y) - mouse).Magnitude
+						if d < bestDist and (not Settings.AimWallCheck or hasLineOfSight(part)) then
+							best, bestDist = part, d
+						end
+					end
+				end
+			end
+		end
+	end
+	return best
+end
+
+local function updateAim(dt)
+	if freecam.Active then return end
+	if not (Settings.AimAssist and aimKeyDown()) then return end
+	local part = getAimTarget()
+	if not part then return end
+
+	local aimPos = part.Position + part.AssemblyLinearVelocity * (Settings.AimPrediction / 100)
+	local goal = CFrame.lookAt(Camera.CFrame.Position, aimPos)
+	local s = math.clamp(Settings.AimSmooth / 100, 0.01, 1)
+	local alpha = s >= 1 and 1 or 1 - (1 - s) ^ (dt * 60)
+	Camera.CFrame = Camera.CFrame:Lerp(goal, alpha)
+end
+
+----------------------------------------------------
+-- Speed / jump / FOV
+----------------------------------------------------
+
+local function getWalkSpeed()
+	if freecam.Active then return 0 end
+	local speed = Settings.WalkSpeed
+	if Settings.Sprint and UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+		speed = speed * Settings.SprintMult
+	end
+	return speed
+end
+
+local function getJumpPower()
+	return freecam.Active and 0 or Settings.JumpPower
+end
+
+local function getFOV(dt)
+	local target = Settings.FOV
+	if Settings.Zoom and not typing() and UserInputService:IsKeyDown(Settings.Keys.Zoom) then
+		target = Settings.ZoomFOV
+	end
+	RT.fov = RT.fov + (target - RT.fov) * math.min(1, dt * 12)
+	return RT.fov
+end
+
+----------------------------------------------------
+-- Freecam
+----------------------------------------------------
+
+local function updateFreecam(dt)
+	if Settings.Freecam then
+		if not freecam.Active then
+			freecam.Active = true
+			local cf = Camera.CFrame
+			freecam.Pos = cf.Position
+			local rx, ry = cf:ToOrientation()
+			freecam.Pitch, freecam.Yaw = rx, ry
+			Camera.CameraType = Enum.CameraType.Scriptable
+		end
+
+		if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+			UserInputService.MouseBehavior = Enum.MouseBehavior.LockCurrentPosition
+			local delta = UserInputService:GetMouseDelta()
+			freecam.Yaw = freecam.Yaw - delta.X * 0.004
+			freecam.Pitch = math.clamp(freecam.Pitch - delta.Y * 0.004, -1.5, 1.5)
+		else
+			UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+		end
+
+		local rot = CFrame.fromOrientation(freecam.Pitch, freecam.Yaw, 0)
+		local move = Vector3.zero
+		if not typing() then
+			if UserInputService:IsKeyDown(Enum.KeyCode.W) then move = move + rot.LookVector end
+			if UserInputService:IsKeyDown(Enum.KeyCode.S) then move = move - rot.LookVector end
+			if UserInputService:IsKeyDown(Enum.KeyCode.D) then move = move + rot.RightVector end
+			if UserInputService:IsKeyDown(Enum.KeyCode.A) then move = move - rot.RightVector end
+			if UserInputService:IsKeyDown(Enum.KeyCode.Space) then move = move + Vector3.yAxis end
+			if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then move = move - Vector3.yAxis end
+		end
+		freecam.Pos = freecam.Pos + move * Settings.FreecamSpeed * dt
+		Camera.CFrame = CFrame.new(freecam.Pos) * rot
+	elseif freecam.Active then
+		freecam.Active = false
+		Camera.CameraType = Enum.CameraType.Custom
+		if Humanoid then Camera.CameraSubject = Humanoid end
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+	end
+end
+
+----------------------------------------------------
+-- Air walk platform
+----------------------------------------------------
+
+local function updateAirWalk(dt)
+	if Settings.AirWalk and Humanoid and Root then
+		if not RT.air then
+			local part = Instance.new("Part")
+			part.Name = "FemboyAirWalk"
+			part.Anchored = true
+			part.Size = Vector3.new(8, 1, 8)
+			part.Transparency = 1
+			part.CanQuery = false
+			part.Parent = workspace
+			RT.air = part
+		end
+
+		local legOffset = Humanoid.RigType == Enum.HumanoidRigType.R6 and 3 or (Humanoid.HipHeight + Root.Size.Y / 2)
+		local feetY = Root.Position.Y - legOffset
+		if not RT.airY then RT.airY = feetY - 0.1 end
+
+		if not typing() and UserInputService:IsKeyDown(Enum.KeyCode.Space) and feetY > RT.airY + 1.5 then
+			RT.airY = feetY - 0.1
+		end
+		if not typing() and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+			RT.airY = RT.airY - 20 * dt
+		end
+
+		RT.air.CFrame = CFrame.new(Root.Position.X, RT.airY - 0.5, Root.Position.Z)
+	elseif RT.air then
+		RT.air:Destroy()
+		RT.air = nil
+		RT.airY = nil
+	end
+end
+
+----------------------------------------------------
+-- HUD text + info labels
+----------------------------------------------------
+
+local function updateHud()
+	local lines = {}
+	if Settings.HudWatermark then table.insert(lines, "FEMBOY SOFT") end
+	if Settings.HudFPS then table.insert(lines, "FPS: " .. math.floor(fpsAverage)) end
+	if Settings.HudPing then table.insert(lines, "Ping: " .. math.floor(LocalPlayer:GetNetworkPing() * 1000) .. " ms") end
+	if Settings.HudMemory then table.insert(lines, "Mem: " .. math.floor(StatsService:GetTotalMemoryUsageMb()) .. " MB") end
+	if Settings.HudCoords and Root then
+		local p = Root.Position
+		table.insert(lines, string.format("XYZ: %.0f, %.0f, %.0f", p.X, p.Y, p.Z))
+	end
+	if Settings.HudSpeed and Root then
+		local v = Root.AssemblyLinearVelocity
+		table.insert(lines, string.format("Speed: %.1f", Vector3.new(v.X, 0, v.Z).Magnitude))
+	end
+	if Settings.HudClock then table.insert(lines, os.date("%H:%M:%S")) end
+
+	HudLabel.Text = table.concat(lines, "\n")
+	HudLabel.TextColor3 = accentColor()
+end
+
+local function updateInfoLabels()
+	if not (Main.Visible and UtilityPage.Visible) then return end
+	for _, info in ipairs(InfoLabels) do
+		local ok, text = pcall(info.Get)
+		info.Label.Text = info.Prefix .. (ok and tostring(text) or "-")
+	end
+end
+
+----------------------------------------------------
+-- Main per-frame feature update
+----------------------------------------------------
+
+local function updateFeatures(dt)
+	RT.hue = (RT.hue + dt * 0.25) % 1
+	fpsAverage = fpsAverage * 0.9 + (1 / math.max(dt, 0.001)) * 0.1
+
+	RT.slow = RT.slow + dt
+	local slow = false
+	if RT.slow >= 0.25 then
+		RT.slow = 0
+		slow = true
+	end
+
+	-- FOV circle
+	if Settings.FOVCircle then
+		local m = UserInputService:GetMouseLocation()
+		FOVCircle.Visible = true
+		FOVCircle.Size = UDim2.fromOffset(Settings.AimFOV * 2, Settings.AimFOV * 2)
+		FOVCircle.Position = UDim2.fromOffset(m.X, m.Y)
+		FOVStroke.Color = accentColor()
+	else
+		FOVCircle.Visible = false
+	end
+
+	-- Rainbow accent / ambient / fullbright / day cycle
+	if Settings.RainbowAccent then
+		RT.accent = RT.accent + dt
+		if RT.accent > 0.08 then
+			RT.accent = 0
+			Accents.Rainbow = Color3.fromHSV(RT.hue, 0.5, 1)
+			applyTheme()
+		end
+	end
+	if Settings.RainbowAmbient then
+		Lighting.Ambient = Color3.fromHSV(RT.hue, 0.6, 1)
+	elseif Settings.Fullbright then
+		Lighting.Ambient = Color3.new(1, 1, 1)
+		Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+	end
+	if Settings.DayCycle then
+		Lighting.ClockTime = (Lighting.ClockTime + dt * Settings.CycleSpeed * 0.05) % 24
+	end
+
+	updateFreecam(dt)
+	updateAirWalk(dt)
+
+	-- Spectate safety
+	if SpectateTarget then
+		local hum = SpectateTarget.Character and SpectateTarget.Character:FindFirstChildOfClass("Humanoid")
+		if not SpectateTarget.Parent then
+			stopSpectate()
+		elseif hum and Camera.CameraSubject ~= hum then
+			Camera.CameraSubject = hum
+		end
+	end
+
+	-- Character-based features
+	if Humanoid and Root and Humanoid.Health > 0 then
+		local focused = typing()
+		local vel = Root.AssemblyLinearVelocity
+
+		if Settings.BunnyHop and not focused and UserInputService:IsKeyDown(Enum.KeyCode.Space) and Humanoid.FloorMaterial ~= Enum.Material.Air then
+			Humanoid.Jump = true
+		end
+		if Settings.SpinBot then
+			Root.CFrame = Root.CFrame * CFrame.Angles(0, math.rad(Settings.SpinSpeed), 0)
+		end
+		if Settings.SafeFall and vel.Y < -80 then
+			Root.AssemblyLinearVelocity = Vector3.new(vel.X, -40, vel.Z)
+		end
+		if Settings.FastFall and not focused and UserInputService:IsKeyDown(Settings.Keys.FastFall) and Humanoid.FloorMaterial == Enum.Material.Air then
+			Root.AssemblyLinearVelocity = Vector3.new(vel.X, -120, vel.Z)
+		end
+		if Settings.AutoWalk then Humanoid:Move(Vector3.new(0, 0, -1), true) end
+		if Settings.PlatformStand then Humanoid.PlatformStand = true end
+		if Settings.Freeze and not Root.Anchored then Root.Anchored = true end
+		if Settings.Ragdoll and slow then Humanoid:ChangeState(Enum.HumanoidStateType.Physics) end
+
+		if Settings.HideSelf and Character then
+			for _, part in ipairs(Character:GetDescendants()) do
+				if part:IsA("BasePart") then part.LocalTransparencyModifier = 1 end
+			end
+		end
+
+		-- Anti Void
+		if Settings.AntiVoid then
+			if slow and Humanoid.FloorMaterial ~= Enum.Material.Air then RT.safe = Root.CFrame end
+			if RT.safe and Root.Position.Y < workspace.FallenPartsDestroyHeight + 60 then
+				Root.AssemblyLinearVelocity = Vector3.zero
+				Root.CFrame = RT.safe + Vector3.new(0, 3, 0)
+				notify("Anti Void: rescued", 2)
+			end
+		end
+
+		-- Follow player
+		if FollowTarget then
+			local tr = FollowTarget.Character and FollowTarget.Character:FindFirstChild("HumanoidRootPart")
+			if tr then
+				Root.CFrame = tr.CFrame * CFrame.new(0, 0, Settings.FollowDistance)
+				Root.AssemblyLinearVelocity = Vector3.zero
+			end
+		end
+
+		-- Survival
+		if Settings.GodMode and Humanoid.Health < Humanoid.MaxHealth then
+			Humanoid.Health = Humanoid.MaxHealth
+		end
+
+		-- Auto activate tool
+		if Settings.AutoTool then
+			RT.tool = RT.tool + dt
+			if RT.tool >= Settings.ToolDelay / 1000 then
+				RT.tool = 0
+				local tool = Character and Character:FindFirstChildOfClass("Tool")
+				if tool then tool:Activate() end
+			end
+		end
+
+		-- Animation speed
+		local animActive = Settings.AnimSpeed ~= 100
+		if animActive or RT.animWas then
+			local animator = Humanoid:FindFirstChildOfClass("Animator")
+			if animator then
+				local speed = animActive and (Settings.AnimSpeed / 100) or 1
+				for _, track in ipairs(animator:GetPlayingAnimationTracks()) do track:AdjustSpeed(speed) end
+			end
+			RT.animWas = animActive
+		end
+
+		-- Slow (4x/sec) tasks
+		if slow then
+			if Settings.AutoHeal then
+				Humanoid.Health = math.min(Humanoid.MaxHealth, Humanoid.Health + Settings.HealRate * 0.25)
+			end
+
+			if Settings.AutoEquip and Character and not Character:FindFirstChildOfClass("Tool") then
+				equipNextTool()
+			end
+
+			if Character then
+				if Settings.SelfHighlight then
+					local h = Character:FindFirstChild("FemboySoftSelf")
+					if not h then
+						h = Instance.new("Highlight")
+						h.Name = "FemboySoftSelf"
+						h.FillTransparency = 0.7
+						h.Parent = Character
+					end
+					h.FillColor = accentColor()
+					h.OutlineColor = accentColor()
+				end
+
+				if Settings.LocalFF and not Character:FindFirstChild("FemboySoftFF") then
+					local ff = Instance.new("ForceField")
+					ff.Name = "FemboySoftFF"
+					ff.Parent = Character
+				end
+			end
+
+			if Settings.InfiniteStamina then
+				for _, holder in ipairs({ Character, LocalPlayer }) do
+					if holder then
+						for name, value in pairs(holder:GetAttributes()) do
+							if type(value) == "number" and string.find(string.lower(name), "stamina") then
+								local key = holder.Name .. name
+								StaminaMax[key] = math.max(StaminaMax[key] or 0, value)
+								holder:SetAttribute(name, StaminaMax[key])
+							end
+						end
+						for _, child in ipairs(holder:GetChildren()) do
+							if (child:IsA("NumberValue") or child:IsA("IntValue")) and string.find(string.lower(child.Name), "stamina") then
+								local key = holder.Name .. child.Name
+								StaminaMax[key] = math.max(StaminaMax[key] or 0, child.Value)
+								child.Value = StaminaMax[key]
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+
+	if slow then
+		updateHud()
+		updateCrosshair()
+	end
+
+	RT.info = RT.info + dt
+	if RT.info >= 0.5 then
+		RT.info = 0
+		updateInfoLabels()
+	end
+end
+
+----------------------------------------------------
+-- Extra connections (respawn handling, jump, AFK)
+----------------------------------------------------
+
+local function hookCharacter(char)
+	local hum = char:WaitForChild("Humanoid", 10)
+	if not hum then return end
+	hum.Died:Connect(function()
+		local r = char:FindFirstChild("HumanoidRootPart")
+		if r then DeathCFrame = r.CFrame end
+	end)
+end
+
+if LocalPlayer.Character then task.spawn(hookCharacter, LocalPlayer.Character) end
+
+connect(LocalPlayer.CharacterAdded, function(char)
+	task.spawn(hookCharacter, char)
+	local target = PendingRespawn or (Settings.SpawnAtDeath and DeathCFrame) or nil
+	PendingRespawn = nil
+	if target then
+		local r = char:WaitForChild("HumanoidRootPart", 5)
+		task.wait(0.7)
+		if r and r.Parent then r.CFrame = target end
+	end
+end)
+
+connect(UserInputService.JumpRequest, function()
+	if Settings.InfJump and Humanoid then
+		Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+	end
+end)
+
+connect(LocalPlayer.Idled, function()
+	if Settings.AntiAFK then
+		pcall(function()
+			VirtualUser:CaptureController()
+			VirtualUser:ClickButton2(Vector2.new())
+		end)
+	end
+end)
+
+connect(Players.PlayerRemoving, function(player)
+	removeVisuals(player)
+	removeESP(player)
+	if FollowTarget == player then FollowTarget = nil end
+end)
+
+--==================================================
+-- UNLOAD
+--==================================================
+
+unload = function()
+	disableAll()
+	Unloaded = true
+
+	updateFreecam(0)
+	stopFly()
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		removeVisuals(player)
+		removeESP(player)
+	end
+
+	for _, className in ipairs(EffectNames) do
+		local effect = Lighting:FindFirstChild("FemboySoft_" .. className)
+		if effect then effect:Destroy() end
+	end
+
+	if RT.air then RT.air:Destroy() RT.air = nil end
+	if Character then
+		for _, name in ipairs({ "FemboySoftSelf", "FemboySoftFF" }) do
+			local obj = Character:FindFirstChild(name)
+			if obj then obj:Destroy() end
+		end
+	end
+
+	if Humanoid then
+		Humanoid.WalkSpeed = 16
+		Humanoid.JumpPower = 50
+	end
+	Camera.FieldOfView = 70
+	UserInputService.MouseIconEnabled = true
+
+	for _, c in ipairs(Connections) do c:Disconnect() end
+	Overlay:Destroy()
+	Gui:Destroy()
+end
+
+--==================================================
+-- MAIN LOOP
+--==================================================
+
+connect(RunService.RenderStepped, function(dt)
+	if Unloaded then return end
+
+	if Settings.Fly then
+		if not FlyVelocity then startFly() end
+	else
+		if FlyVelocity then stopFly() end
+	end
+
+	if Settings.Noclip then noclip() end
+	updateESP()
+	updateExtraESP()
+
+	if Humanoid then
+		Humanoid.WalkSpeed = getWalkSpeed()
+		Humanoid.JumpPower = getJumpPower()
+	end
+
+	if not freecam.Active then
+		Camera.FieldOfView = getFOV(dt)
+	end
+
+	updateAim(dt)
+	updateFeatures(dt)
+end)
+
+local HotkeyTargets = {
+	Fly = "Fly",
+	Noclip = "Noclip",
+	ESP = "Player ESP",
+	Aim = "Aim Assist",
+	InfJump = "Infinite Jump",
+	Freecam = "Freecam",
+	Fullbright = "Fullbright",
+}
+
+connect(UserInputService.InputBegan, function(input, processed)
+	if processed or Settings.Rebinding or Unloaded then return end
+
+	-- Ctrl + Click teleport
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if Settings.ClickTP and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) and Mouse.Hit then
+			teleportToCFrame(CFrame.new(Mouse.Hit.Position + Vector3.new(0, 3, 0)))
+		end
+		return
+	end
+
+	local key = input.KeyCode
+	if key == Enum.KeyCode.Unknown then return end
+
+	if key == Settings.MenuKey then
+		setMenuVisible(not MenuOpen)
+		return
+	end
+
+	if key == Settings.Keys.Panic then
+		disableAll()
+		setMenuVisible(false)
+		notify("PANIC: all features disabled", 3, true)
+		return
+	end
+
+	if not Settings.Hotkeys then return end
+
+	if Settings.Dash and key == Settings.Keys.Dash then
+		dash()
+		return
+	end
+
+	for id, toggleName in pairs(HotkeyTargets) do
+		if key == Settings.Keys[id] then
+			local toggle = Toggles[toggleName]
+			if toggle then
+				toggle.set(not toggle.get())
+				notify(toggleName .. (toggle.get() and "  ON" or "  OFF"))
+			end
+			return
+		end
+	end
+end)
+
+-- Застосовуємо тему при завантаженні
+applyTheme()
+updateCrosshair()
+notify("FEMBOY SOFT loaded  -  press " .. Settings.MenuKey.Name .. " to toggle", 4, true)
